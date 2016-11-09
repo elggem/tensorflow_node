@@ -43,7 +43,7 @@ class StackedAutoEncoder:
 
     def add_noise(self, x):
         if self.noise == 'gaussian':
-            n = np.random.normal(0, 0.5, (len(x), len(x[0])))
+            n = np.random.normal(0, 0.2, (len(x), len(x[0]))).astype(x.dtype)
             return x + n
         if 'mask' in self.noise:
             frac = float(self.noise.split('-')[1])
@@ -119,19 +119,27 @@ class StackedAutoEncoder:
             loss = tf.sqrt(tf.reduce_mean(tf.square(tf.sub(x_, decoded))))
         elif loss == 'cross-entropy':
             loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(decoded, x_))  ### This is not working in it's current form!
+            #loss = -tf.reduce_mean(x_ * tf.log(decoded))
         
+        #tf.scalar_summary("loss", loss)
+
         train_op = tf.train.AdamOptimizer(lr).minimize(loss)
 
         sess.run(tf.initialize_all_variables())
         for i in range(epoch):
             b_x, b_x_ = utils.get_batch(data_x, data_x_, batch_size)
-
             sess.run(train_op, feed_dict={x: b_x, x_: b_x_})
 
-            if (i + 1) % print_step == 0:
-                l = sess.run(loss, feed_dict={x: data_x, x_: data_x_})
-                #tf.scalar_summary("global loss", l)
-                print('epoch {0}: global loss = {1}'.format(i, l))
+            ## write summaries to tensorboard
+            #merged_summary_op = tf.merge_all_summaries()
+            #summary_writer = tf.train.SummaryWriter(utils.get_summary_dir(),graph=sess.graph)
+            #
+            #summary_str = sess.run(merged_summary_op, feed_dict={x: b_x, x_: b_x_})
+            #summary_writer.add_summary(summary_str, i)
+
+            #if (i + 1) % print_step == 0:
+            #    l = sess.run(loss, feed_dict={x: data_x, x_: data_x_})
+            #    print('epoch {0}: global loss = {1}'.format(i, l))
         
         # debug
         # print('Decoded', sess.run(decoded, feed_dict={x: self.data_x_})[0])

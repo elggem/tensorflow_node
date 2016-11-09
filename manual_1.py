@@ -3,7 +3,6 @@
 
 #from sklearn import datasets
 from model import StackedAutoEncoder
-import matplotlib.pyplot as plt
 
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data

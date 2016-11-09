@@ -3,6 +3,7 @@ import signal
 import subprocess
 import sys
 from os.path import join as pjoin
+import matplotlib.pyplot as plt
 
 import numpy as np
 
@@ -14,6 +15,9 @@ def home_out(path):
 _tb_pid_file = home_out(".tbpid")
 _tb_path = os.path.join(os.path.dirname(tb.__file__), 'tensorboard.py')
 _tb_port = "6006"
+
+def get_summary_dir():
+    return home_out('summaries');
 
 def start_tensorboard():
   if not os.path.exists(_tb_path):
@@ -30,7 +34,7 @@ def start_tensorboard():
 
   devnull = open(os.devnull, 'wb')
   p = subprocess.Popen(['nohup', sys.executable,
-                        '-u', _tb_path, '--logdir={0}'.format(home_out('summaries')),
+                        '-u', _tb_path, '--logdir={0}'.format(get_summary_dir()),
                         '--port=' + _tb_port], stdout=devnull, stderr=devnull)
   with open(_tb_pid_file, 'w') as f:
     f.write(str(p.pid))
