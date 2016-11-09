@@ -9,7 +9,7 @@ _*This code is work-in-progress and not ready for use.*_
   - [ ] Simple experiment with single AE.
   - [ ] Implement DeSTIN architecture w. hierarchy of AE's
   - [ ] Implement Unit Tests
-  - [ ] Documentation (reference TensorFlowDeepAutoencoder repo)
+  - [ ] Documentation (reference repos used)
 
 ## Done 
 
