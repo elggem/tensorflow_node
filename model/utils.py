@@ -4,6 +4,7 @@ import subprocess
 import sys
 from os.path import join as pjoin
 import matplotlib.pyplot as plt
+import datetime
 
 import numpy as np
 
@@ -16,8 +17,11 @@ _tb_pid_file = home_out(".tbpid")
 _tb_path = os.path.join(os.path.dirname(tb.__file__), 'tensorboard.py')
 _tb_port = "6006"
 
+##this on init.
+now = datetime.datetime.now()
+
 def get_summary_dir():
-    return home_out('summaries');
+    return home_out('summaries')+now.strftime("/%Y-%m-%d-%s")
 
 def start_tensorboard():
   if not os.path.exists(_tb_path):
@@ -125,3 +129,35 @@ def plot_max_activation_fast(model, filename):
     
     plt.imshow(data, cmap='Greys', interpolation="nearest")
     plt.savefig(filename)
+
+
+def get_max_activation_fast(model):
+    W = model.weights['encoded']
+    
+    outputs = []
+    
+    #calculate for each hl
+    for i in xrange(W.shape[1]):
+        output = np.array(np.zeros(W.shape[0]),dtype='float32')
+    
+        W_ij_sum = 0
+        for j in xrange(output.size):
+            W_ij_sum += np.power(W[j][i],2)
+    
+        for j in xrange(output.size): 
+            W_ij = W[j][i]
+            output[j] = (W_ij)/(np.sqrt(W_ij_sum))
+    
+        outputs.append(output.reshape([28,28]))
+    
+    #plot the results
+    #f, a = plt.subplots(10, 10, figsize=(10, 10))
+    data = np.zeros([280,280], dtype=np.float32)
+    
+    rows = []
+
+    for i in xrange(10):
+        rows.append(np.concatenate(outputs[i*10:(i*10)+10], 0))
+
+    data = np.concatenate(rows, 1)
+    return data

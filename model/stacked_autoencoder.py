@@ -40,6 +40,7 @@ class StackedAutoEncoder:
         self.assertions()
         self.depth = len(dims)
         self.weights, self.biases = {}, {}
+        self.iteration = 0
 
     def add_noise(self, x):
         if self.noise == 'gaussian':
@@ -57,7 +58,7 @@ class StackedAutoEncoder:
 
     def fit(self, x):
         for i in range(self.depth):
-            print('Layer {0}'.format(i + 1))
+            print('Layer {0}'.format(i + 1)+' Iteration {0}'.format(self.iteration))
             if self.noise is None:
                 x = self.run(data_x=x, activation=self.activations[i],
                              data_x_=x,
@@ -92,54 +93,89 @@ class StackedAutoEncoder:
 
     def run(self, data_x, data_x_, hidden_dim, activation, loss, lr,
             print_step, epoch, batch_size=100):
+
+        self.iteration = self.iteration + 1
+
         tf.reset_default_graph()
         input_dim = len(data_x[0])
         sess = tf.Session()
-
-        x = tf.placeholder(dtype=tf.float32, shape=[None, input_dim], name='x')
-        x_ = tf.placeholder(dtype=tf.float32, shape=[None, input_dim], name='x_')
+        
+        with tf.name_scope('input'):
+            x = tf.placeholder(dtype=tf.float32, shape=[None, input_dim], name='x')
+            x_ = tf.placeholder(dtype=tf.float32, shape=[None, input_dim], name='x_')
 
         if (len(self.weights)==0 and len(self.biases)==0):
             #Generate weights and biases randomly for first run
-            encode = {'weights': tf.Variable(tf.truncated_normal([input_dim, hidden_dim], dtype=tf.float32)), 
-                      'biases': tf.Variable(tf.truncated_normal([hidden_dim], dtype=tf.float32))}
+            with tf.name_scope("encode_weights"):
+                encode_weights = tf.Variable(tf.truncated_normal([input_dim, hidden_dim], dtype=tf.float32))
+            
+            with tf.name_scope("decode_weights"):   
+                decode_weights = tf.transpose(encode_weights)
 
-            decode = {'weights': tf.transpose(encode['weights']), 
-                      'biases': tf.Variable(tf.truncated_normal([input_dim], dtype=tf.float32))}
+            with tf.name_scope("encode_biases"):
+                encode_biases = tf.Variable(tf.truncated_normal([hidden_dim], dtype=tf.float32))
+
+            with tf.name_scope("decode_biases"):
+                decode_biases = tf.Variable(tf.truncated_normal([input_dim], dtype=tf.float32))
+
         else:
             #Retrieve old weights and biases
-            encode = {'weights': tf.Variable(self.weights['encoded']), 'biases': tf.Variable(self.biases['encoded'])}
-            decode = {'weights': tf.Variable(self.weights['decoded']), 'biases': tf.Variable(self.biases['decoded'])}
+            with tf.name_scope("encode_weights"):
+                encode_weights = tf.Variable(self.weights['encoded'])
+            
+            with tf.name_scope("decode_weights"):   
+                decode_weights = tf.Variable(self.weights['decoded'])
 
-        encoded = self.activate(tf.matmul(x, encode['weights']) + encode['biases'], activation)
-        decoded = tf.matmul(encoded, decode['weights']) + decode['biases']
+            with tf.name_scope("encode_biases"):
+                encode_biases = tf.Variable(self.biases['encoded'])
 
-        # reconstruction loss
-        if loss == 'rmse':
-            loss = tf.sqrt(tf.reduce_mean(tf.square(tf.sub(x_, decoded))))
-        elif loss == 'cross-entropy':
-            loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(decoded, x_))  ### This is not working in it's current form!
-            #loss = -tf.reduce_mean(x_ * tf.log(decoded))
+            with tf.name_scope("decode_biases"):
+                decode_biases = tf.Variable(self.biases['decoded'])
+
+        # Add summary ops to collect data
+        w_h = tf.histogram_summary("encode_weights", encode_weights)
+        b_h = tf.histogram_summary("encode_biases", encode_biases)
+
+
+        encode = {'weights': encode_weights, 
+                  'biases': encode_biases}
+    
+        decode = {'weights': decode_weights, 
+                  'biases': decode_biases}
+
+        with tf.name_scope("encoded"):
+            encoded = self.activate(tf.matmul(x, encode['weights']) + encode['biases'], activation)
         
-        #tf.scalar_summary("loss", loss)
+        with tf.name_scope("decoded"):
+            decoded = tf.matmul(encoded, decode['weights']) + decode['biases']
 
-        train_op = tf.train.AdamOptimizer(lr).minimize(loss)
+        with tf.name_scope("loss"):
+            # reconstruction loss
+            if loss == 'rmse':
+                loss = tf.sqrt(tf.reduce_mean(tf.square(tf.sub(x_, decoded))))
+            elif loss == 'cross-entropy':
+                loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(decoded, x_))  ### This is not working in it's current form!
+                #loss = -tf.reduce_mean(x_ * tf.log(decoded))
+            
+            tf.scalar_summary("loss", loss)
+
+        with tf.name_scope("train"):
+            train_op = tf.train.AdamOptimizer(lr).minimize(loss)
+
+        # Merge all summaries into a single operator
+        merged_summary_op = tf.merge_all_summaries()
+        
+        if (self.iteration == 1):
+            summary_writer = tf.train.SummaryWriter(utils.get_summary_dir(), graph=sess.graph)
+        else:
+            summary_writer = tf.train.SummaryWriter(utils.get_summary_dir())
 
         sess.run(tf.initialize_all_variables())
         for i in range(epoch):
             b_x, b_x_ = utils.get_batch(data_x, data_x_, batch_size)
-            sess.run(train_op, feed_dict={x: b_x, x_: b_x_})
+            _, summary_str = sess.run([train_op, merged_summary_op], feed_dict={x: b_x, x_: b_x_})
 
-            ## write summaries to tensorboard
-            #merged_summary_op = tf.merge_all_summaries()
-            #summary_writer = tf.train.SummaryWriter(utils.get_summary_dir(),graph=sess.graph)
-            #
-            #summary_str = sess.run(merged_summary_op, feed_dict={x: b_x, x_: b_x_})
-            #summary_writer.add_summary(summary_str, i)
-
-            #if (i + 1) % print_step == 0:
-            #    l = sess.run(loss, feed_dict={x: data_x, x_: data_x_})
-            #    print('epoch {0}: global loss = {1}'.format(i, l))
+            summary_writer.add_summary(summary_str, self.iteration*epoch + i)
         
         # debug
         # print('Decoded', sess.run(decoded, feed_dict={x: self.data_x_})[0])
@@ -147,6 +183,12 @@ class StackedAutoEncoder:
         self.biases['encoded'] = sess.run(encode['biases'])
         self.weights['decoded'] = sess.run(decode['weights'])
         self.biases['decoded'] = sess.run(decode['biases'])
+
+        max_activations_image = utils.get_max_activation_fast(self)
+        image_summary_op = tf.image_summary("training_images", tf.reshape(max_activations_image, (1, 280, 280, 1)))
+        image_summary_str = sess.run(image_summary_op, feed_dict={x: b_x, x_: b_x_})
+        summary_writer.add_summary(image_summary_str, self.iteration)
+
         return sess.run(encoded, feed_dict={x: data_x_})
 
     def activate(self, linear, name):

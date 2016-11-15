@@ -13,7 +13,7 @@ import numpy as np
 import model.utils as utils
 from os.path import join as pjoin
 
-utils.start_tensorboard()
+#utils.start_tensorboard()
 
 train_data = mnist.train.images 
 
@@ -30,6 +30,9 @@ model = StackedAutoEncoder(
     print_step=50
 )
 
-for i in xrange(80):
+#writer = tf.train.SummaryWriter(utils.get_summary_dir(), graph=tf.Session().graph)
+
+for i in xrange(10):
     model.fit(train_data)
-    utils.plot_max_activation_fast(model, "epoch_%04d_linear_gaussian_0.2.png" % (i*50))
+    #utils.plot_max_activation_fast(model, "epoch_%04d_linear_gaussian_0.2.png" % (i*50))
+
