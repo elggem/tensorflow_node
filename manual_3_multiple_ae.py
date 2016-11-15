@@ -28,14 +28,16 @@ for _ in xrange(4):
         dims=[100],
         activations=['linear'], 
         noise='gaussian', 
-        epoch=[50],
+        epoch=[100],
         loss='rmse',
         lr=0.007,
         batch_size=150
     ))
 
-for i in xrange(3):
+for i in xrange(15):
     for model in models:
         model.fit(train_data)
         model.save_weights()
         
+for model in models:
+    model.write_activation_summary()

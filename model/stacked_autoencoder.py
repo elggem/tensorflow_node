@@ -48,37 +48,43 @@ class StackedAutoEncoder:
         self.iteration = 0
         self.depth = len(dims)
         self.weights, self.biases = {}, {}
-        self.run_operation = None
+        self.run_operations = []
+        self.encoded_operations = []
+        self.decoded_operations = []
         self.saver = None
 
         print ("👌 Autoencoder initalized " + self.name)
 
     def fit(self, x):
+        #increase iteration counter
+        self.iteration = self.iteration + 1
+
         for i in range(self.depth):
             print(self.name + ' layer {0}'.format(i + 1)+' iteration {0}'.format(self.iteration))
 
             #if this is the first iteration initialize the graph
-            if (self.iteration == 0):
+            if (self.iteration == 1):
                 self.init_run(input_dim=len(x[0]),
+                              layer=i,
                               hidden_dim=self.dims[i], 
                               activation=self.activations[i], 
                               loss=self.loss, 
                               lr=self.lr)
 
-            #assert if initialization was succesful
-            assert(self.run_operation and self.saver)
-
             if self.noise is None:
                 x = self.run(data_x=x, 
                              data_x_=x,
+                             layer=i,
                              epoch=self.epoch[i],
                              batch_size=self.batch_size)
             else:
                 temp = np.copy(x)
                 x = self.run(data_x=self.add_noise(temp),
                              data_x_=x,
+                             layer=i,
                              epoch=self.epoch[i],
                              batch_size=self.batch_size)
+
 
     def transform(self, data):
         sess = self.session
@@ -95,64 +101,56 @@ class StackedAutoEncoder:
         self.fit(x)
         return self.transform(x)
 
-
-    def run(self, data_x, data_x_, epoch, batch_size=100):
+    def run(self, data_x, data_x_, layer, epoch, batch_size=100):
         sess = self.session
         summary_writer = tf.train.SummaryWriter(utils.get_summary_dir(), graph=sess.graph)
 
-        #increase iteration counter
-        self.iteration = self.iteration + 1
-
         for i in range(epoch):
             b_x, b_x_ = utils.get_batch(data_x, data_x_, batch_size)
-            _, summary_str = sess.run(self.run_operation, feed_dict={self.name+'/input/x:0': b_x, self.name+'/input/x_:0': b_x_})    
-            summary_writer.add_summary(summary_str, self.iteration*epoch + i)
-        
-    
-        #max_activations_image = utils.get_max_activation_fast(self)
-        #image_summary_op = tf.image_summary("training_images", tf.reshape(max_activations_image, (1, 280, 280, 1)))
-        #image_summary_str = sess.run(image_summary_op, feed_dict={x: b_x, x_: b_x_})
-        #summary_writer.add_summary(image_summary_str, self.iteration)
-    
-        #return sess.run(encoded, feed_dict={x: data_x_})
 
-    def init_run(self, input_dim, hidden_dim, activation, loss, lr):
+            feed_dict = {self.name+'_layer_'+str(layer)+'/input/x:0':  b_x, 
+                         self.name+'_layer_'+str(layer)+'/input/x_:0': b_x_}
+
+            _, summary_str = sess.run(self.run_operations[layer], feed_dict=feed_dict)    
+            summary_writer.add_summary(summary_str, self.iteration*epoch + i)
+    
+        return sess.run(self.encoded_operations[layer], feed_dict={self.name+'_layer_'+str(layer)+'/input/x:0': data_x_})
+
+
+    def init_run(self, input_dim, hidden_dim, activation, loss, lr, layer):
         sess = self.session
 
         # store all variables, so that we can later determinate what new variables there are
         temp = set(tf.all_variables())
 
-        with tf.name_scope(self.name):
-
+        with tf.name_scope(self.name+"_layer_"+str(layer)):
             # input placeholders            
             with tf.name_scope('input'):
                 x = tf.placeholder(dtype=tf.float32, shape=[None, input_dim], name='x')
                 x_ = tf.placeholder(dtype=tf.float32, shape=[None, input_dim], name='x_')
-        
+
             # weight and bias variables
-            with tf.variable_scope(self.name) as scope:
+            with tf.variable_scope(self.name+"_layer_"+str(layer)):
                 encode_weights = tf.get_variable("encode_weights", (input_dim, hidden_dim), initializer=tf.random_normal_initializer())
-                decode_weights = tf.transpose(encode_weights)
+                decode_weights = tf.transpose(encode_weights) ## AE is symmetric (bound variables), thus no seperate decoder weights.
                 encode_biases = tf.get_variable("encode_biases", (hidden_dim), initializer=tf.random_normal_initializer())
                 decode_biases = tf.get_variable("decode_biases", (input_dim), initializer=tf.random_normal_initializer())
-
+    
             # Add summary ops to collect data
-            tf.histogram_summary(self.name+"_encode_weights", encode_weights, collections=[self.name])
-            tf.histogram_summary(self.name+"_encode_biases", encode_biases, collections=[self.name])
-            tf.histogram_summary(self.name+"_decode_weights", decode_weights, collections=[self.name])
-            tf.histogram_summary(self.name+"_decode_biases", decode_biases, collections=[self.name])
-
+            tf.histogram_summary(self.name+"_encode_weights_layer_"+str(layer), encode_weights, collections=[self.name+"_layer_"+str(layer)])
+            tf.histogram_summary(self.name+"_encode_biases_layer_"+str(layer), encode_biases, collections=[self.name+"_layer_"+str(layer)])
+            tf.histogram_summary(self.name+"_decode_weights_layer_"+str(layer), decode_weights, collections=[self.name+"_layer_"+str(layer)])
+            tf.histogram_summary(self.name+"_decode_biases_layer_"+str(layer), decode_biases, collections=[self.name+"_layer_"+str(layer)])
+    
             # initialize saver for writing weights to disk
-            self.saver = tf.train.Saver({"encode_weights": encode_weights, 
-                                         "encode_biases": encode_biases, 
-                                         "decode_biases": decode_biases})
-
+            self.saver = tf.train.Saver([encode_weights, encode_biases, decode_biases])
+    
             with tf.name_scope("encoded"):
                 encoded = self.activate(tf.matmul(x, encode_weights) + encode_biases, activation)
             
             with tf.name_scope("decoded"):
                 decoded = tf.matmul(encoded, decode_weights) + decode_biases
-        
+            
             with tf.name_scope("loss"):
                 # reconstruction loss
                 if loss == 'rmse':
@@ -160,19 +158,21 @@ class StackedAutoEncoder:
                 elif loss == 'cross-entropy':
                     loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(decoded, x_))  ### TODO this is not working in it's current form! why?
                 # record loss
-                tf.scalar_summary(self.name+"_loss", loss, collections=[self.name])
-        
+                tf.scalar_summary(self.name+"_loss_layer_"+str(layer), loss, collections=[self.name+"_layer_"+str(layer)])
+            
             with tf.name_scope("train"):
                 train_op = tf.train.AdamOptimizer(lr).minimize(loss)
-    
+        
             # Merge all summaries into a single operator
-            merged_summary_op = tf.merge_all_summaries(key=self.name)
+            merged_summary_op = tf.merge_all_summaries(key=self.name+"_layer_"+str(layer))
                             
             # initalize all new variables
             sess.run(tf.initialize_variables(set(tf.all_variables()) - temp))
-
+    
             # initalize run operation
-            self.run_operation = [train_op, merged_summary_op]
+            self.encoded_operations.append(encoded)
+            self.decoded_operations.append(decoded)
+            self.run_operations.append([train_op, merged_summary_op])
 
 
     def save_weights(self):
@@ -181,6 +181,19 @@ class StackedAutoEncoder:
         # Save variables to disk.
         self.saver.save(sess, utils.home_out('checkpoints')+"/"+self.name+"_"+str(self.iteration))
         print("💾 Model saved.")
+
+    def write_activation_summary(self):
+        sess = self.session
+        #TODO: refactor
+        with tf.variable_scope(self.name+"_layer_0") as scope:
+            scope.reuse_variables()
+            encode_weights = tf.get_variable("encode_weights")
+            summary_writer = tf.train.SummaryWriter(utils.get_summary_dir())
+            max_activations_image = utils.get_max_activation_fast(encode_weights.eval(session=sess))
+            image_summary_op = tf.image_summary("activation_plot_"+self.name, tf.reshape(max_activations_image, (1, 280, 280, 1)))
+            image_summary_str = sess.run(image_summary_op)
+            summary_writer.add_summary(image_summary_str, self.iteration)
+            print("📈 activation image plotted.")
 
     def add_noise(self, x):
         if self.noise == 'gaussian':

@@ -131,8 +131,7 @@ def plot_max_activation_fast(model, filename):
     plt.savefig(filename)
 
 
-def get_max_activation_fast(model):
-    W = model.weights['encoded']
+def get_max_activation_fast(W):
     
     outputs = []
     
