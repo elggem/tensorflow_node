@@ -19,9 +19,9 @@ train_data = mnist.train.images
 
 print "👉 processed input data!"
 
-models = []
+print "recording summaries to " + utils.get_summary_dir()
 
-global_session = tf.Session()
+models = []
 
 for _ in xrange(4):
     models.append(StackedAutoEncoder(
@@ -31,9 +31,7 @@ for _ in xrange(4):
         epoch=[50],
         loss='rmse',
         lr=0.007,
-        batch_size=150,
-        print_step=50,
-        session = global_session
+        batch_size=150
     ))
 
 for i in xrange(3):
