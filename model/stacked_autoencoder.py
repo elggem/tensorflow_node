@@ -45,7 +45,6 @@ class StackedAutoEncoder:
         self.assertions()
         self.name = "ae_%08x" % random.getrandbits(32)
         self.session = tf.Session()
-        self.summary_writer = tf.train.SummaryWriter(utils.get_summary_dir(), graph=self.session.graph)
         self.iteration = 0
         self.depth = len(dims)
         self.weights, self.biases = {}, {}
@@ -99,6 +98,7 @@ class StackedAutoEncoder:
 
     def run(self, data_x, data_x_, epoch, batch_size=100):
         sess = self.session
+        summary_writer = tf.train.SummaryWriter(utils.get_summary_dir(), graph=sess.graph)
 
         #increase iteration counter
         self.iteration = self.iteration + 1
@@ -106,7 +106,7 @@ class StackedAutoEncoder:
         for i in range(epoch):
             b_x, b_x_ = utils.get_batch(data_x, data_x_, batch_size)
             _, summary_str = sess.run(self.run_operation, feed_dict={self.name+'/input/x:0': b_x, self.name+'/input/x_:0': b_x_})    
-            self.summary_writer.add_summary(summary_str, self.iteration*epoch + i)
+            summary_writer.add_summary(summary_str, self.iteration*epoch + i)
         
     
         #max_activations_image = utils.get_max_activation_fast(self)
