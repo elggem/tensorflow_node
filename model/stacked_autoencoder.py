@@ -46,7 +46,7 @@ class StackedAutoEncoder:
         self.session = tf.Session()
         self.iteration = 0
         self.depth = len(dims)
-        self.weights, self.biases = {}, {}
+        self.weights = None
         self.run_operations = []
         self.encoded_operations = []
         self.decoded_operations = []
@@ -92,6 +92,7 @@ class StackedAutoEncoder:
 
 
     def transform(self, data):
+        ## TODO: This is probably broken!
         sess = self.session
 
         x = tf.constant(data, dtype=tf.float32)
@@ -109,8 +110,8 @@ class StackedAutoEncoder:
     def run(self, data_x, data_x_, layer, epoch, batch_size=100):
         sess = self.session
 
-        #only log the graph on first iteration.
-        if (self.iteration == 1):
+        #only log the graph the second iteration
+        if (self.iteration == 2): # second because during first run the graph gets modified
             summary_writer = tf.train.SummaryWriter(utils.get_summary_dir(), graph=sess.graph)
         else:
             summary_writer = tf.train.SummaryWriter(utils.get_summary_dir())
@@ -124,7 +125,9 @@ class StackedAutoEncoder:
 
             _, summary_str = sess.run(self.run_operations[layer], feed_dict=feed_dict)    
             summary_writer.add_summary(summary_str, self.iteration*epoch + i)
-    
+            summary_writer.flush()
+
+        summary_writer.close()
         return sess.run(self.encoded_operations[layer], feed_dict={feeding_scope+'x:0': data_x_})
 
 
@@ -150,6 +153,9 @@ class StackedAutoEncoder:
                         encode_biases = tf.get_variable("encode_biases", (hidden_dim), initializer=tf.random_normal_initializer())
                         decode_biases = tf.get_variable("decode_biases", (input_dim), initializer=tf.random_normal_initializer())
         
+                # used for plotting max activations.
+                self.weights = encode_weights
+
                 with tf.name_scope("encoded"):
                     encoded = self.activate(tf.matmul(x, encode_weights) + encode_biases, activation)
 
@@ -207,18 +213,17 @@ class StackedAutoEncoder:
 
     def write_activation_summary(self):
         sess = self.session
-        summary_writer = tf.train.SummaryWriter(utils.get_summary_dir())
-
-        with tf.variable_scope(self.name+"/layer_0") as scope:
-            scope.reuse_variables()
-            encode_weights = tf.get_variable("encode_weights")
         
-        max_activation_plot = utils.get_max_activation_fast(encode_weights.eval(session=sess))
+        max_activation_plot = utils.get_max_activation_fast(self.weights.eval(session=sess))
         
-        image_summary_op = tf.image_summary("activation_plot_"+self.name, tf.reshape(max_activation_plot, (1, 160, 160, 1)))
+        image_summary_op = tf.image_summary("activation_plot_"+self.name, np.reshape(max_activation_plot, (1, 160, 160, 1)), max_images=1)
         image_summary_str = sess.run(image_summary_op)
-        summary_writer.add_summary(image_summary_str, self.iteration)
         
+        summary_writer = tf.train.SummaryWriter(utils.get_summary_dir(), graph=sess.graph)
+        summary_writer.add_summary(image_summary_str, self.iteration)
+        summary_writer.flush()
+        summary_writer.close()
+
         print("📈 activation image plotted.")
 
     def add_noise(self, x):
