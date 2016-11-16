@@ -33,8 +33,7 @@ class StackedAutoEncoder:
         assert utils.noise_validator(
             self.noise, allowed_noises), "Incorrect noise given"
 
-    def __init__(self, dims, activations, epoch=1000, noise=None, loss='rmse',
-                 lr=0.001, batch_size=100, session=None):
+    def __init__(self, dims, activations, epoch=1000, noise=None, loss='rmse', lr=0.001, batch_size=100, session=None):
         self.batch_size = batch_size
         self.lr = lr
         self.loss = loss

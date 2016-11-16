@@ -89,5 +89,4 @@ ENV/
 .ropeproject
 
 # tensorflow data
-data/*
 output/*
