@@ -202,13 +202,13 @@ class StackedAutoEncoder:
         sess = self.session
         summary_writer = tf.train.SummaryWriter(utils.get_summary_dir())
 
-        with tf.variable_scope(self.name+"_layer_0") as scope:
+        with tf.variable_scope(self.name+"/layer_0") as scope:
             scope.reuse_variables()
             encode_weights = tf.get_variable("encode_weights")
         
         max_activation_plot = utils.get_max_activation_fast(encode_weights.eval(session=sess))
         
-        image_summary_op = tf.image_summary("activation_plot_"+self.name, tf.reshape(max_activations_image, (1, 280, 280, 1)))
+        image_summary_op = tf.image_summary("activation_plot_"+self.name, tf.reshape(max_activation_plot, (1, 280, 280, 1)))
         image_summary_str = sess.run(image_summary_op)
         summary_writer.add_summary(image_summary_str, self.iteration)
         
