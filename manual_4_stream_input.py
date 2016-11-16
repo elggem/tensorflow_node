@@ -29,7 +29,7 @@ for _ in xrange(4):
         dims=[100],
         activations=['linear'], 
         noise='gaussian', 
-        epoch=[10],
+        epoch=[100],
         loss='rmse',
         lr=0.007,
         batch_size=1
@@ -38,14 +38,15 @@ for _ in xrange(4):
 ### Initialize Enqueue thread:
 inputlayer = OpenCVInputLayer()
 
-inputlayer.registerCallback([00,00,16,16], models[0].fit)
-inputlayer.registerCallback([16,00,16,16], models[1].fit)
-inputlayer.registerCallback([00,16,16,16], models[2].fit)
-inputlayer.registerCallback([16,16,16,16], models[3].fit)
+inputlayer.registerCallback([00,00,16,16], models[0].fit_single)
+inputlayer.registerCallback([16,00,16,16], models[1].fit_single)
+inputlayer.registerCallback([00,16,16,16], models[2].fit_single)
+inputlayer.registerCallback([16,16,16,16], models[3].fit_single)
 
-inputlayer.feedWebcam()
+inputlayer.feedVideo("data/hand.m4v")
 
-
+for model in models:
+    model.write_activation_summary()
 
 
 
@@ -55,8 +56,6 @@ for i in xrange(2):
         model.fit(train_data)
         model.save_parameters()
         
-for model in models:
-    model.write_activation_summary()
 """
 
 

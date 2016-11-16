@@ -37,6 +37,6 @@ class OpenCVInputLayer(InputLayer):
             y = region[1]
             w = region[2]
             h = region[3]
-            callback(frame[y:y + h, x:x + w])
+            callback(frame[y:y + h, x:x + w].flatten()/255.0)
         #iterate callbacks and split into corresponding regions
         #triggercallbacks

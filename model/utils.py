@@ -147,11 +147,11 @@ def get_max_activation_fast(W):
             W_ij = W[j][i]
             output[j] = (W_ij)/(np.sqrt(W_ij_sum))
     
-        outputs.append(output.reshape([28,28]))
+        outputs.append(output.reshape([16,16]))
     
     #plot the results
     #f, a = plt.subplots(10, 10, figsize=(10, 10))
-    data = np.zeros([280,280], dtype=np.float32)
+    data = np.zeros([160,160], dtype=np.float32)
     
     rows = []
 

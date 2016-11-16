@@ -50,11 +50,15 @@ class StackedAutoEncoder:
         self.run_operations = []
         self.encoded_operations = []
         self.decoded_operations = []
+        self.callback = None ##called when result is available.
         self.saver = None
         with tf.name_scope(self.name) as scope:
             self.scope = scope
 
         print ("👌 Autoencoder initalized " + self.name)
+
+    def fit_single(self, x):
+        self.fit(x.reshape([1,len(x)]))
 
     def fit(self, x):
         #increase iteration counter
@@ -104,7 +108,12 @@ class StackedAutoEncoder:
 
     def run(self, data_x, data_x_, layer, epoch, batch_size=100):
         sess = self.session
-        summary_writer = tf.train.SummaryWriter(utils.get_summary_dir(), graph=sess.graph)
+
+        #only log the graph on first iteration.
+        if (self.iteration == 1):
+            summary_writer = tf.train.SummaryWriter(utils.get_summary_dir(), graph=sess.graph)
+        else:
+            summary_writer = tf.train.SummaryWriter(utils.get_summary_dir())
 
         feeding_scope = self.name+"/layer_"+str(layer)+"/input/"
 
@@ -206,7 +215,7 @@ class StackedAutoEncoder:
         
         max_activation_plot = utils.get_max_activation_fast(encode_weights.eval(session=sess))
         
-        image_summary_op = tf.image_summary("activation_plot_"+self.name, tf.reshape(max_activation_plot, (1, 280, 280, 1)))
+        image_summary_op = tf.image_summary("activation_plot_"+self.name, tf.reshape(max_activation_plot, (1, 160, 160, 1)))
         image_summary_str = sess.run(image_summary_op)
         summary_writer.add_summary(image_summary_str, self.iteration)
         
