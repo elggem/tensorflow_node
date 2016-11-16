@@ -55,7 +55,6 @@ class StackedAutoEncoder:
         with tf.name_scope(self.name) as scope:
             self.scope = scope
 
-
         print ("👌 Autoencoder initalized " + self.name)
 
     def fit(self, x):
