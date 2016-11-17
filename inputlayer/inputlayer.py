@@ -4,7 +4,7 @@ import numpy as np
 
 class InputLayer:
     """
-    Contains the worker thread that uses OpenCV to feed in images and video feeds to TF.
+    TODO doc
     """
     
     def assertions(self):
@@ -19,7 +19,7 @@ class InputLayer:
         print ("📸 Input Layer initalized")
 
     def registerCallback(self, region, callback):
-        ##assert callback is a function
+        #assert callback is a function
         self.callbacks.append([region, callback, []])
         print ("📸 callback registered")
 

@@ -27,7 +27,7 @@ def get_summary_dir():
 
 
 ## Global summary writer.
-### TODO Summary writer as object.
+### TODO Summary writer as singleton class.
 writer = None
 
 def get_summary_writer():
@@ -61,10 +61,6 @@ def start_tensorboard():
 
   if False:
     subprocess.Popen(['open', 'http://localhost:{0}'.format(_tb_port)])
-
-def get_batch(X, X_, size):
-    a = np.random.choice(len(X), size, replace=False)
-    return X[a], X_[a]
 
 
 def noise_validator(noise, allowed_noises):
