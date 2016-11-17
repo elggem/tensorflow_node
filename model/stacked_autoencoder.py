@@ -4,7 +4,7 @@ import numpy as np
 import random
 import model.utils as utils
 import tensorflow as tf
-
+from tensorflow.python.client import timeline
 allowed_activations = ['sigmoid', 'tanh', 'softmax', 'relu', 'linear']
 allowed_noises = [None, 'gaussian', 'mask']
 allowed_losses = ['rmse', 'cross-entropy']
@@ -113,9 +113,18 @@ class StackedAutoEncoder:
         for i in range(epoch):
             feed_dict = {feeding_scope+'x:0':  data_x, feeding_scope+'x_:0': data_x_}
 
-            _, summary_str = sess.run(self.run_operations[layer], feed_dict=feed_dict)    
+            run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+            run_metadata = tf.RunMetadata()
+
+            _, summary_str = sess.run(self.run_operations[layer], feed_dict=feed_dict, options=run_options, run_metadata=run_metadata)    
             self.summary_writer.add_summary(summary_str, self.iteration*epoch + i)
 
+
+        # Create the Timeline object, and write it to a json
+        tl = timeline.Timeline(run_metadata.step_stats)
+        ctf = tl.generate_chrome_trace_format()
+        with open('output/timeline.json', 'w') as f:
+            f.write(ctf)
 
         self.summary_writer.flush()
 
