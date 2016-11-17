@@ -50,6 +50,7 @@ class StackedAutoEncoder:
         self.weights = {}
         self.biases = {}
         self.run_operations = []
+        self.summary_operations = []
         self.encoded_operations = []
         self.decoded_operations = []
         self.callback = None ##called when result is available.
@@ -113,21 +114,25 @@ class StackedAutoEncoder:
         for i in range(epoch):
             feed_dict = {feeding_scope+'x:0':  data_x, feeding_scope+'x_:0': data_x_}
 
+            ### Used for profiling.
             #run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
             #run_metadata = tf.RunMetadata()
 
-            sess.run(self.run_operations[layer][0], feed_dict=feed_dict)
-                #, options=run_options, run_metadata=run_metadata)    
+            sess.run(self.run_operations[layer], feed_dict=feed_dict)
+            
+            ### Used for profiling
+            #, options=run_options, run_metadata=run_metadata)    
 
 
-        # Create the Timeline object, and write it to a json
+        ### Used for profiling
+        #Create the Timeline object, and write it to a json
         #tl = timeline.Timeline(run_metadata.step_stats)
         #ctf = tl.generate_chrome_trace_format()
         #with open('output/timeline.json', 'w') as f:
         #    f.write(ctf)
 
         # run summary operation. #TODO: lets not have run_operations in this array form... refactor
-        summary_str = sess.run(self.run_operations[layer][1], feed_dict=feed_dict)
+        summary_str = sess.run(self.summary_operations[layer], feed_dict=feed_dict)
         self.summary_writer.add_summary(summary_str, self.iteration*epoch + i)
         self.summary_writer.flush()
 
@@ -157,7 +162,6 @@ class StackedAutoEncoder:
                         decode_biases = tf.get_variable("decode_biases", (input_dim), initializer=tf.random_normal_initializer())
         
                 # used for transform and plotting max activations.
-                ##TODO: put in layer structure here...
                 self.weights[layer] = encode_weights
                 self.biases[layer] = encode_biases
 
@@ -203,7 +207,8 @@ class StackedAutoEncoder:
                 # initalize run operation
                 self.encoded_operations.append(encoded)
                 self.decoded_operations.append(decoded)
-                self.run_operations.append([train_op, merged_summary_op])
+                self.run_operations.append(train_op)
+                self.summary_operations.append(merged_summary_op)
 
 
     def save_parameters(self):
