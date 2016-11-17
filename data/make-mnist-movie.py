@@ -4,18 +4,17 @@
 import cv2
 import cv
 import numpy as np
-import model.utils as utils
 from os.path import join as pjoin
 
 from tensorflow.examples.tutorials.mnist import input_data
-mnist = input_data.read_data_sets('data/mnist', one_hot=True)
+mnist = input_data.read_data_sets('mnist', one_hot=True)
 
 train_data = mnist.train.images 
 
 print "👉 processed input data!"
 
 # Define the codec and create VideoWriter object
-out = cv2.VideoWriter('./mnist.mjpeg',cv.FOURCC(*'MJPG'), 200, (28,28))
+out = cv2.VideoWriter('./mnist.mjpg',cv.FOURCC(*'MJPG'), 25, (28,28))
 
 i = 0
 

@@ -19,13 +19,13 @@ class OpenCVInputLayer(InputLayer):
             else:
                 break
 
-    def feedVideo(self, filename, frames=-1):
+    def feedVideo(self, filename, frames=-1, size=(28,28)):
         cap = cv2.VideoCapture(filename)
 
         while(frames != 0):
             isvalid, frame = cap.read()
             if isvalid:
-                res = cv2.resize(frame,(32, 32), interpolation = cv2.INTER_CUBIC)
+                res = cv2.resize(frame, size, interpolation = cv2.INTER_CUBIC)
                 gray = cv2.cvtColor(res, cv2.COLOR_BGR2GRAY)
                 self.processFrame(gray)
             else:
