@@ -113,20 +113,19 @@ class StackedAutoEncoder:
         for i in range(epoch):
             feed_dict = {feeding_scope+'x:0':  data_x, feeding_scope+'x_:0': data_x_}
 
-            #run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
-            #run_metadata = tf.RunMetadata()
+            run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+            run_metadata = tf.RunMetadata()
 
-            sess.run(self.run_operations[layer][0], feed_dict=feed_dict)
-            #, options=run_options, run_metadata=run_metadata)    
+            sess.run(self.run_operations[layer][0], feed_dict=feed_dict, options=run_options, run_metadata=run_metadata)    
 
 
         # Create the Timeline object, and write it to a json
-        #tl = timeline.Timeline(run_metadata.step_stats)
-        #ctf = tl.generate_chrome_trace_format()
-        #with open('output/timeline.json', 'w') as f:
-        #    f.write(ctf)
+        tl = timeline.Timeline(run_metadata.step_stats)
+        ctf = tl.generate_chrome_trace_format()
+        with open('output/timeline.json', 'w') as f:
+            f.write(ctf)
 
-        # run summary operation. #TODO: NOTHAVETHISINARRAY refactor
+        # run summary operation. #TODO: lets not have run_operations in this array form... refactor
         summary_str = sess.run(self.run_operations[layer][1], feed_dict=feed_dict)
         self.summary_writer.add_summary(summary_str, self.iteration*epoch + i)
         self.summary_writer.flush()
