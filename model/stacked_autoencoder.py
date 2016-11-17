@@ -47,7 +47,8 @@ class StackedAutoEncoder:
         self.saver = None
         self.iteration = 0
         self.depth = len(dims)
-        self.weights = None
+        self.weights = {}
+        self.biases = {}
         self.run_operations = []
         self.encoded_operations = []
         self.decoded_operations = []
@@ -91,19 +92,16 @@ class StackedAutoEncoder:
 
 
     def transform(self, data):
-        ## TODO: This is broken!
         sess = self.session
 
         x = tf.constant(data, dtype=tf.float32)
         for w, b, a in zip(self.weights, self.biases, self.activations):
-            weight = tf.constant(w, dtype=tf.float32)
-            bias = tf.constant(b, dtype=tf.float32)
-            layer = tf.matmul(x, weight) + bias
+            layer = tf.matmul(x, self.weights[w]) + self.biases[b]
             x = self.activate(layer, a)
-        return x.eval(session=sess)
+        transformed = x.eval(session=sess)
+        return transformed
 
     def fit_transform(self, x):
-        ## TODO this is broken!
         self.fit(x)
         return self.transform(x)
 
@@ -146,8 +144,10 @@ class StackedAutoEncoder:
                         encode_biases = tf.get_variable("encode_biases", (hidden_dim), initializer=tf.random_normal_initializer())
                         decode_biases = tf.get_variable("decode_biases", (input_dim), initializer=tf.random_normal_initializer())
         
-                # used for plotting max activations.
-                self.weights = encode_weights
+                # used for transform and plotting max activations.
+                ##TODO: put in layer structure here...
+                self.weights[layer] = encode_weights
+                self.biases[layer] = encode_biases
 
                 with tf.name_scope("encoded"):
                     encoded = self.activate(tf.matmul(x, encode_weights) + encode_biases, activation)
@@ -211,7 +211,11 @@ class StackedAutoEncoder:
     def write_activation_summary(self):
         sess = self.session
 
-        W = self.weights.eval(session=sess)
+        #layer 0 not initialized.
+        if (not self.weights.has_key(0)):
+            pass
+
+        W = self.weights[0].eval(session=sess)
 
         input_wh = int(np.ceil(np.power(W.shape[0],0.5)))
         input_shape = [input_wh, input_wh]
