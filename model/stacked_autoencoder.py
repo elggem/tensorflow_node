@@ -117,7 +117,7 @@ class StackedAutoEncoder:
             #run_metadata = tf.RunMetadata()
 
             sess.run(self.run_operations[layer][0], feed_dict=feed_dict)
-                #, options=run_options, run_metadata=run_metadata)    
+            #, options=run_options, run_metadata=run_metadata)    
 
 
         # Create the Timeline object, and write it to a json
@@ -127,7 +127,7 @@ class StackedAutoEncoder:
         #    f.write(ctf)
 
         # run summary operation. #TODO: NOTHAVETHISINARRAY refactor
-        summary_str = sess.run(self.run_operations[layer][1], feed_dict=feed_dict, options=run_options, run_metadata=run_metadata)    
+        summary_str = sess.run(self.run_operations[layer][1], feed_dict=feed_dict)
         self.summary_writer.add_summary(summary_str, self.iteration*epoch + i)
         self.summary_writer.flush()
 
