@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import cv2
+import numpy as np
 from . import InputLayer
 
 class OpenCVInputLayer(InputLayer):
@@ -13,19 +14,19 @@ class OpenCVInputLayer(InputLayer):
         while(True):
             isvalid, frame = cap.read()
             if isvalid:
-                res = cv2.resize(frame,(32, 32), interpolation = cv2.INTER_CUBIC)
+                res = cv2.resize(frame, self.output_size, interpolation = cv2.INTER_CUBIC)
                 gray = cv2.cvtColor(res, cv2.COLOR_BGR2GRAY)
                 self.processFrame(gray)
             else:
                 break
 
-    def feedVideo(self, filename, frames=-1, size=(28,28)):
+    def feedVideo(self, filename, frames=-1):
         cap = cv2.VideoCapture(filename)
 
         while(frames != 0):
             isvalid, frame = cap.read()
             if isvalid:
-                res = cv2.resize(frame, size, interpolation = cv2.INTER_CUBIC)
+                res = cv2.resize(frame, self.output_size, interpolation = cv2.INTER_CUBIC)
                 gray = cv2.cvtColor(res, cv2.COLOR_BGR2GRAY)
                 self.processFrame(gray)
             else:
@@ -35,11 +36,13 @@ class OpenCVInputLayer(InputLayer):
                 frames = frames - 1
 
     def processFrame(self, frame):
-        for region, callback in self.callbacks:
+        for region, callback, batch in self.callbacks:
             x = region[0]
             y = region[1]
             w = region[2]
             h = region[3]
-            callback(frame[y:y + h, x:x + w].flatten()/255.0)
-        #iterate callbacks and split into corresponding regions
-        #triggercallbacks
+            roi = frame[y:y + h, x:x + w].flatten()/255.0
+            batch.append(roi)
+            if (len(batch) >= self.batch_size):
+                callback(np.array(batch))
+                batch[:] = []

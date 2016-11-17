@@ -18,17 +18,16 @@ model = StackedAutoEncoder(
         dims=[100],
         activations=['linear'], 
         noise='gaussian', 
-        epoch=[1],
+        epoch=[100],
         loss='rmse',
-        lr=0.007,
-        batch_size=1
+        lr=0.007
     )
 
-### Initialize Enqueue thread:
-inputlayer = OpenCVInputLayer()
+# Initialize input layer, register callback and feed video
+inputlayer = OpenCVInputLayer(output_size=(28,28), batch_size=250)
 
-inputlayer.registerCallback([0,0,28,28], model.fit_single)
+inputlayer.registerCallback([0,0,28,28], model.fit)+
 
-inputlayer.feedVideo("data/mnist.mp4", frames=5000)
+inputlayer.feedVideo("data/mnist.mp4")
 
 model.write_activation_summary()

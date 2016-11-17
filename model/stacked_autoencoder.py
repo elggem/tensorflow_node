@@ -33,8 +33,7 @@ class StackedAutoEncoder:
         assert utils.noise_validator(
             self.noise, allowed_noises), "Incorrect noise given"
 
-    def __init__(self, dims, activations, epoch=1000, noise=None, loss='rmse', lr=0.001, batch_size=100, session=None):
-        self.batch_size = batch_size
+    def __init__(self, dims, activations, epoch=1000, noise=None, loss='rmse', lr=0.001, session=None):
         self.lr = lr
         self.loss = loss
         self.activations = activations
@@ -59,12 +58,8 @@ class StackedAutoEncoder:
         print ("👌 Autoencoder initalized " + self.name)
 
     def __del__(self):
-        #self.summary_writer.close()
         self.session.close()
         print ("🖐 Autoencoder " + self.name + " deallocated, closed session.")
-
-    def fit_single(self, x):
-        self.fit(x.reshape([1,len(x)]))
 
     def fit(self, x):
         #increase iteration counter
@@ -86,15 +81,13 @@ class StackedAutoEncoder:
                 x = self.run(data_x=x, 
                              data_x_=x,
                              layer=i,
-                             epoch=self.epoch[i],
-                             batch_size=self.batch_size)
+                             epoch=self.epoch[i])
             else:
                 temp = np.copy(x)
                 x = self.run(data_x=self.add_noise(temp),
                              data_x_=x,
                              layer=i,
-                             epoch=self.epoch[i],
-                             batch_size=self.batch_size)
+                             epoch=self.epoch[i])
 
 
     def transform(self, data):
@@ -110,18 +103,17 @@ class StackedAutoEncoder:
         return x.eval(session=sess)
 
     def fit_transform(self, x):
+        ## TODO this is broken!
         self.fit(x)
         return self.transform(x)
 
-    def run(self, data_x, data_x_, layer, epoch, batch_size=100):
+    def run(self, data_x, data_x_, layer, epoch):
         sess = self.session
 
         feeding_scope = self.name+"/layer_"+str(layer)+"/input/"
 
         for i in range(epoch):
-            b_x, b_x_ = utils.get_batch(data_x, data_x_, batch_size)
-
-            feed_dict = {feeding_scope+'x:0':  b_x, feeding_scope+'x_:0': b_x_}
+            feed_dict = {feeding_scope+'x:0':  data_x, feeding_scope+'x_:0': data_x_}
 
             _, summary_str = sess.run(self.run_operations[layer], feed_dict=feed_dict)    
             self.summary_writer.add_summary(summary_str, self.iteration*epoch + i)
@@ -252,7 +244,7 @@ class StackedAutoEncoder:
 
         activation_image = np.concatenate(output_rows, 1)
         
-        image_summary_op = tf.image_summary("activation_plot_"+self.name, np.reshape(activation_image, (1, output_shape[0], output_shape[1], 1)), max_images=1)
+        image_summary_op = tf.image_summary("activation_plot_"+self.name, np.reshape(activation_image, (1, output_shape[0], output_shape[1], 1)))
         image_summary_str = sess.run(image_summary_op)
         
         self.summary_writer.add_summary(image_summary_str, self.iteration)
