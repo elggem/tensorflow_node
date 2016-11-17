@@ -3,12 +3,14 @@ import signal
 import subprocess
 import sys
 from os.path import join as pjoin
-import matplotlib.pyplot as plt
 import datetime
 
 import numpy as np
 
+import tensorflow as tf
 from tensorflow import tensorboard as tb
+
+
 
 def home_out(path):
   return pjoin(os.getcwd(), 'output', path)
@@ -22,6 +24,20 @@ now = datetime.datetime.now()
 
 def get_summary_dir():
     return home_out('summaries')+now.strftime("/%Y-%m-%d-%s")
+
+
+## Global summary writer.
+### TODO Summary writer as object.
+writer = None
+
+def get_summary_writer():
+    global writer
+    if (writer == None):
+        #sess = tf.Session()
+        writer = tf.train.SummaryWriter(get_summary_dir())
+
+    return writer
+
 
 def start_tensorboard():
   if not os.path.exists(_tb_path):
@@ -65,98 +81,3 @@ def noise_validator(noise, allowed_noises):
     except:
         return False
     pass
-
-def plot_max_activation(model, filename):
-    W = model.weights['encoded']
-    
-    outputs = []
-    
-    #calculate for each hl
-    for i in xrange(W.shape[1]):
-        output = np.array(np.zeros(W.shape[0]),dtype='float32')
-    
-        W_ij_sum = 0
-        for j in xrange(output.size):
-            W_ij_sum += np.power(W[j][i],2)
-    
-        for j in xrange(output.size): 
-            W_ij = W[j][i]
-            output[j] = (W_ij)/(np.sqrt(W_ij_sum))
-    
-        outputs.append(output)
-    
-    #plot the results
-    f, a = plt.subplots(10, 10, figsize=(10, 10))
-    
-    for i in range(10):
-        for j in range(10):
-            a[i][j].imshow(outputs[((i+1)*(j+1))-1].reshape([28,28]), cmap='Greys', interpolation="nearest")
-    
-    f.savefig(filename)
-    #f.show()
-    #plt.draw()
-    #plt.waitforbuttonpress()
-
-def plot_max_activation_fast(model, filename):
-    W = model.weights['encoded']
-    
-    outputs = []
-    
-    #calculate for each hl
-    for i in xrange(W.shape[1]):
-        output = np.array(np.zeros(W.shape[0]),dtype='float32')
-    
-        W_ij_sum = 0
-        for j in xrange(output.size):
-            W_ij_sum += np.power(W[j][i],2)
-    
-        for j in xrange(output.size): 
-            W_ij = W[j][i]
-            output[j] = (W_ij)/(np.sqrt(W_ij_sum))
-    
-        outputs.append(output.reshape([28,28]))
-    
-    #plot the results
-    #f, a = plt.subplots(10, 10, figsize=(10, 10))
-    data = np.zeros([280,280], dtype=np.float32)
-    
-    rows = []
-
-    for i in xrange(10):
-        rows.append(np.concatenate(outputs[i*10:(i*10)+10], 0))
-
-    data = np.concatenate(rows, 1)
-    
-    plt.imshow(data, cmap='Greys', interpolation="nearest")
-    plt.savefig(filename)
-
-
-def get_max_activation_fast(W):
-    
-    outputs = []
-    
-    #calculate for each hl
-    for i in xrange(W.shape[1]):
-        output = np.array(np.zeros(W.shape[0]),dtype='float32')
-    
-        W_ij_sum = 0
-        for j in xrange(output.size):
-            W_ij_sum += np.power(W[j][i],2)
-    
-        for j in xrange(output.size): 
-            W_ij = W[j][i]
-            output[j] = (W_ij)/(np.sqrt(W_ij_sum))
-    
-        outputs.append(output.reshape([16,16]))
-    
-    #plot the results
-    #f, a = plt.subplots(10, 10, figsize=(10, 10))
-    data = np.zeros([160,160], dtype=np.float32)
-    
-    rows = []
-
-    for i in xrange(10):
-        rows.append(np.concatenate(outputs[i*10:(i*10)+10], 0))
-
-    data = np.concatenate(rows, 1)
-    return data

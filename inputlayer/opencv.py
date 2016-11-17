@@ -19,10 +19,10 @@ class OpenCVInputLayer(InputLayer):
             else:
                 break
 
-    def feedVideo(self, filename):
+    def feedVideo(self, filename, frames=-1):
         cap = cv2.VideoCapture(filename)
 
-        while(True):
+        while(frames != 0):
             isvalid, frame = cap.read()
             if isvalid:
                 res = cv2.resize(frame,(32, 32), interpolation = cv2.INTER_CUBIC)
@@ -30,6 +30,9 @@ class OpenCVInputLayer(InputLayer):
                 self.processFrame(gray)
             else:
                 break
+
+            if (frames > 0):
+                frames = frames - 1
 
     def processFrame(self, frame):
         for region, callback in self.callbacks:

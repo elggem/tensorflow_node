@@ -14,7 +14,6 @@ from os.path import join as pjoin
 
 print "recording summaries to " + utils.get_summary_dir()
 
-
 models = []
 
 for _ in xrange(4):
@@ -22,7 +21,7 @@ for _ in xrange(4):
         dims=[100],
         activations=['linear'], 
         noise='gaussian', 
-        epoch=[100],
+        epoch=[10],
         loss='rmse',
         lr=0.007,
         batch_size=1
@@ -36,8 +35,7 @@ inputlayer.registerCallback([16,00,16,16], models[1].fit_single)
 inputlayer.registerCallback([00,16,16,16], models[2].fit_single)
 inputlayer.registerCallback([16,16,16,16], models[3].fit_single)
 
-inputlayer.feedVideo("data/hand.m4v")
+inputlayer.feedVideo("data/hand.m4v", frames=20)
 
 for model in models:
     model.write_activation_summary()
-

@@ -44,6 +44,8 @@ class StackedAutoEncoder:
         self.assertions()
         self.name = "ae-%08x" % random.getrandbits(32)
         self.session = tf.Session()
+        self.summary_writer = utils.get_summary_writer()
+        self.saver = None
         self.iteration = 0
         self.depth = len(dims)
         self.weights = None
@@ -51,11 +53,15 @@ class StackedAutoEncoder:
         self.encoded_operations = []
         self.decoded_operations = []
         self.callback = None ##called when result is available.
-        self.saver = None
         with tf.name_scope(self.name) as scope:
             self.scope = scope
 
         print ("👌 Autoencoder initalized " + self.name)
+
+    def __del__(self):
+        #self.summary_writer.close()
+        self.session.close()
+        print ("🖐 Autoencoder " + self.name + " deallocated, closed session.")
 
     def fit_single(self, x):
         self.fit(x.reshape([1,len(x)]))
@@ -92,7 +98,7 @@ class StackedAutoEncoder:
 
 
     def transform(self, data):
-        ## TODO: This is probably broken!
+        ## TODO: This is broken!
         sess = self.session
 
         x = tf.constant(data, dtype=tf.float32)
@@ -110,12 +116,6 @@ class StackedAutoEncoder:
     def run(self, data_x, data_x_, layer, epoch, batch_size=100):
         sess = self.session
 
-        #only log the graph the second iteration
-        if (self.iteration == 2): # second because during first run the graph gets modified
-            summary_writer = tf.train.SummaryWriter(utils.get_summary_dir(), graph=sess.graph)
-        else:
-            summary_writer = tf.train.SummaryWriter(utils.get_summary_dir())
-
         feeding_scope = self.name+"/layer_"+str(layer)+"/input/"
 
         for i in range(epoch):
@@ -124,10 +124,11 @@ class StackedAutoEncoder:
             feed_dict = {feeding_scope+'x:0':  b_x, feeding_scope+'x_:0': b_x_}
 
             _, summary_str = sess.run(self.run_operations[layer], feed_dict=feed_dict)    
-            summary_writer.add_summary(summary_str, self.iteration*epoch + i)
-            summary_writer.flush()
+            self.summary_writer.add_summary(summary_str, self.iteration*epoch + i)
 
-        summary_writer.close()
+
+        self.summary_writer.flush()
+
         return sess.run(self.encoded_operations[layer], feed_dict={feeding_scope+'x:0': data_x_})
 
 
@@ -188,6 +189,10 @@ class StackedAutoEncoder:
                 # initialize saver for writing weights to disk
                 self.saver = tf.train.Saver([encode_weights, encode_biases, decode_biases])               
                 
+                # initialize summary writer 
+                #self.summary_writer = tf.train.SummaryWriter(utils.get_summary_dir()+self.name, graph=sess.graph)
+                self.summary_writer.add_graph(sess.graph)
+
                 # initalize all new variables
                 sess.run(tf.initialize_variables(set(tf.all_variables()) - temp))
         
@@ -213,16 +218,45 @@ class StackedAutoEncoder:
 
     def write_activation_summary(self):
         sess = self.session
+
+        W = self.weights.eval(session=sess)
+
+        input_wh = int(np.ceil(np.power(W.shape[0],0.5)))
+        input_shape = [input_wh, input_wh]
+
+        output_wh = int(np.ceil(np.power(W.shape[1],0.5)))
+        output_shape = [input_wh*output_wh, input_wh*output_wh]
+
+        outputs = []
+        output_rows = []
+
+        activation_image = np.zeros(output_shape, dtype=np.float32)
+
+        #calculate for each hidden neuron
+        for i in xrange(W.shape[1]):
+            output = np.array(np.zeros(W.shape[0]),dtype='float32')
         
-        max_activation_plot = utils.get_max_activation_fast(self.weights.eval(session=sess))
+            W_ij_sum = 0
+
+            for j in xrange(output.size):
+                W_ij_sum += np.power(W[j][i],2)
         
-        image_summary_op = tf.image_summary("activation_plot_"+self.name, np.reshape(max_activation_plot, (1, 160, 160, 1)), max_images=1)
+            for j in xrange(output.size): 
+                W_ij = W[j][i]
+                output[j] = (W_ij)/(np.sqrt(W_ij_sum))
+        
+            outputs.append(output.reshape(input_shape))
+        
+        for i in xrange(10):
+            output_rows.append(np.concatenate(outputs[i*10:(i*10)+10], 0))
+
+        activation_image = np.concatenate(output_rows, 1)
+        
+        image_summary_op = tf.image_summary("activation_plot_"+self.name, np.reshape(activation_image, (1, output_shape[0], output_shape[1], 1)), max_images=1)
         image_summary_str = sess.run(image_summary_op)
         
-        summary_writer = tf.train.SummaryWriter(utils.get_summary_dir(), graph=sess.graph)
-        summary_writer.add_summary(image_summary_str, self.iteration)
-        summary_writer.flush()
-        summary_writer.close()
+        self.summary_writer.add_summary(image_summary_str, self.iteration)
+        self.summary_writer.flush()
 
         print("📈 activation image plotted.")
 
