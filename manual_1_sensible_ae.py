@@ -43,8 +43,7 @@ model = StackedAutoEncoder(
     epoch=[50],
     loss='rmse',
     lr=0.007,
-    batch_size=150,
-    print_step=50
+    batch_size=150
 )
 
 for i in xrange(80):

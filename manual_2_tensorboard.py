@@ -26,8 +26,7 @@ model = StackedAutoEncoder(
     epoch=[50],
     loss='rmse',
     lr=0.007,
-    batch_size=150,
-    print_step=50
+    batch_size=150
 )
 
 #writer = tf.train.SummaryWriter(utils.get_summary_dir(), graph=tf.Session().graph)
