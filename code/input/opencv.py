@@ -19,7 +19,6 @@ class OpenCVInputLayer(InputLayer):
             raise IOError("OpenCVLayer - video file not found!")
 
         framecount = frames
-        repeat -= 1
         
         cap = cv2.VideoCapture(filename)
 
