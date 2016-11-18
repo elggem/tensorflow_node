@@ -2,8 +2,7 @@
 
 import numpy as np
 import random
-import model.utils as utils
-from summary_writer import SummaryWriter
+from utils import SummaryWriter
 
 import tensorflow as tf
 from tensorflow.python.client import timeline
@@ -18,9 +17,9 @@ class StackedAutoEncoder:
     extended for standalone use in DeSTIN perception framework
     """
 
-    def __init__(self, dims, activations, epoch=1000, noise=None, loss='rmse', lr=0.001, session=None, metadata=False, timeline=False):
+    def __init__(self, dims, activations, name='ae', epoch=100, noise=None, loss='rmse', lr=0.001, metadata=False, timeline=False):
         # object initialization
-        self.name = "ae-%08x" % random.getrandbits(32)
+        self.name = name+'-%08x' % random.getrandbits(32)
         self.session = tf.Session()
         self.iteration = 0 # one iteration is fitting batch_size*epoch times.
         # parameters
@@ -33,7 +32,9 @@ class StackedAutoEncoder:
         self.metadata = metadata # collect metadata information
         self.timeline = timeline # collect timeline information
         self.assertions()
-
+        # namescope for summary writers
+        with tf.name_scope(self.name) as scope:
+            self.scope = scope
         # layer variables and ops
         self.depth = len(dims)
         self.layers = []
@@ -46,12 +47,8 @@ class StackedAutoEncoder:
                                 'encode_op': None, 
                                 'decode_op': None})
 
-        # callback to other autoencoders
-        self.callback = None ##called when result is available.
-
-        # namescope for summary writers
-        with tf.name_scope(self.name) as scope:
-            self.scope = scope
+        # callback to other autoencoders, triggered when transform called.
+        self.callbacks = []
 
         print ("👌 Autoencoder initalized " + self.name)
 
@@ -60,6 +57,17 @@ class StackedAutoEncoder:
         print ("🖐 Autoencoder " + self.name + " deallocated, closed session.")
 
 
+    # register a new callback in array
+    def registerCallback(self, callback):
+        self.callbacks.append(callback)
+
+    # fit given data and return transformed
+    def fit_transform(self, x):
+        #print self.name+": received shape " + str(x.shape)
+        self.fit(x)
+        return self.transform(x)
+
+    # fit given data
     def fit(self, x):
         # increase iteration counter
         self.iteration += 1
@@ -88,7 +96,7 @@ class StackedAutoEncoder:
                              layer=i,
                              epoch=self.epoch[i])
 
-
+    # transform data and return
     def transform(self, data):
         sess = self.session
 
@@ -97,12 +105,15 @@ class StackedAutoEncoder:
             layer = tf.matmul(x, layer['encode_weights']) + layer['encode_biases']
             x = self.activate(layer, a)
         transformed = x.eval(session=sess)
+
+        # trigger registered callbacks
+        for callback in self.callbacks:
+            callback(transformed)
+
         return transformed
 
-    def fit_transform(self, x):
-        self.fit(x)
-        return self.transform(x)
 
+    # main run call to fit data for given layer
     def run(self, data_x, data_x_, layer, epoch):
         sess = self.session
 
@@ -125,7 +136,7 @@ class StackedAutoEncoder:
         if self.metadata and self.timeline:
             tl = timeline.Timeline(run_metadata.step_stats)
             ctf = tl.generate_chrome_trace_format()
-            with open(utils.home_out('timelines')+"/"+self.name+"_layer_"+str(layer)+"_iteration_"+str(self.iteration)+".json", 'w') as f:
+            with open(SummaryWriter().home_out('timelines')+"/"+self.name+"_layer_"+str(layer)+"_iteration_"+str(self.iteration)+".json", 'w') as f:
                 f.write(ctf)
                 print "📊 written timeline trace."
 
@@ -141,6 +152,7 @@ class StackedAutoEncoder:
         return sess.run(self.layers[layer]['encode_op'], feed_dict={feeding_scope+'x:0': data_x_})
 
 
+    # initialize variables according to params and input data for given layer.
     def init_run(self, input_dim, hidden_dim, activation, loss, lr, layer):
         sess = self.session
 
@@ -210,6 +222,7 @@ class StackedAutoEncoder:
                 self.layers[layer]['summ_op'] = merged_summary_op
 
 
+    # save parameters to disk using tf.train.Saver
     def save_parameters(self):
         sess = self.session
 
@@ -221,7 +234,7 @@ class StackedAutoEncoder:
             to_be_saved['layer'+str(layer)+'_decode_biases'] = self.layers[layer]['decode_biases']
 
         saver = tf.train.Saver(to_be_saved)
-        saver.save(sess, utils.home_out('checkpoints')+"/"+self.name+"_"+str(self.iteration))
+        saver.save(sess, SummaryWriter().home_out('checkpoints')+"/"+self.name+"_"+str(self.iteration))
 
         print("💾 model saved.")
 
@@ -232,7 +245,9 @@ class StackedAutoEncoder:
         #print("💾✅ model restored.")
 
 
-    def write_activation_summary(self):
+    # visualization of maximum activation for all hidden neurons on layer 0
+    # according to: http://deeplearning.stanford.edu/wiki/index.php/Visualizing_a_Trained_Autoencoder)
+    def max_activation_summary(self):
         sess = self.session
 
         #layer 0 not initialized.
@@ -280,6 +295,11 @@ class StackedAutoEncoder:
 
         print("📈 activation image plotted.")
 
+    # plot visualization of last activation to summary
+    def transformed_summary(self):
+        raise NotImplementedError()
+
+    # noise for denoising AE.
     def add_noise(self, x):
         if self.noise == 'gaussian':
             n = np.random.normal(0, 0.2, (len(x), len(x[0]))).astype(x.dtype)
@@ -294,6 +314,7 @@ class StackedAutoEncoder:
         if self.noise == 'sp':
             pass
 
+    # different activation functions
     def activate(self, linear, name):
         if name == 'sigmoid':
             return tf.nn.sigmoid(linear, name='encoded')

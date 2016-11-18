@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 
+import os
+from os.path import join as pjoin
+
 import datetime
-import utils
 import tensorflow as tf
 
 # Singleton
@@ -16,6 +18,11 @@ class SummaryWriter(object):
         if not hasattr(self, 'writer'):
             print "📊 initializing summary writer."
             now = datetime.datetime.now()
-            self.directory = utils.home_out('summaries')+now.strftime("/%Y-%m-%d-%s")
+            self.directory = self.home_out('summaries')+now.strftime("/%Y-%m-%d-%s")
             self.writer = tf.train.SummaryWriter(self.directory)
 
+    def home_out(self, path):
+      output_path = pjoin(os.getcwd(), 'output', path)
+      if not os.path.exists(output_path):
+        os.makedirs(output_path)
+      return output_path
