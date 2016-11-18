@@ -9,8 +9,8 @@ from code import log
 log.info("recording summaries to " + SummaryWriter().directory)
 
 model_input_a = StackedAutoEncoder(
-        name="ae-input",
-        dims=[100],
+        name="ae-a",
+        dims=[16],
         activations=['linear'], 
         noise='gaussian', 
         epoch=[100],
@@ -19,8 +19,8 @@ model_input_a = StackedAutoEncoder(
     )
 
 model_input_b = StackedAutoEncoder(
-        name="ae-input",
-        dims=[100],
+        name="ae-b",
+        dims=[16],
         activations=['linear'], 
         noise='gaussian', 
         epoch=[100],
@@ -29,8 +29,8 @@ model_input_b = StackedAutoEncoder(
     )
 
 model_input_c = StackedAutoEncoder(
-        name="ae-input",
-        dims=[100],
+        name="ae-c",
+        dims=[16],
         activations=['linear'], 
         noise='gaussian', 
         epoch=[100],
@@ -39,8 +39,8 @@ model_input_c = StackedAutoEncoder(
     )
 
 model_input_d = StackedAutoEncoder(
-        name="ae-input",
-        dims=[100],
+        name="ae-d",
+        dims=[16],
         activations=['linear'], 
         noise='gaussian', 
         epoch=[100],
@@ -49,9 +49,29 @@ model_input_d = StackedAutoEncoder(
     )
 
 
+model_middle_ab = StackedAutoEncoder(
+        name="ae-m-ab",
+        dims=[16],
+        activations=['linear'], 
+        noise='gaussian', 
+        epoch=[100],
+        loss='rmse',
+        lr=0.007
+    )
+
+model_middle_cd = StackedAutoEncoder(
+        name="ae-m-cd",
+        dims=[16],
+        activations=['linear'], 
+        noise='gaussian', 
+        epoch=[100],
+        loss='rmse',
+        lr=0.007
+    )
+
 model_top = StackedAutoEncoder(
         name="ae-top",
-        dims=[100],
+        dims=[16],
         activations=['linear'], 
         noise='gaussian', 
         epoch=[100],
@@ -60,28 +80,24 @@ model_top = StackedAutoEncoder(
     )
 
 # Initialize input layer, register callback and feed video
-inputlayer = OpenCVInputLayer(output_size=(28,28), batch_size=25)
+inputlayer = OpenCVInputLayer(output_size=(28,28), batch_size=250)
 
-#connect a to left and b to right side of input.
+
+#connect a-d to corners of input, no stride
 model_input_a.register_for_inputlayer(inputlayer, [00,00,14,14])
 model_input_b.register_for_inputlayer(inputlayer, [14,00,14,14])
 model_input_c.register_for_inputlayer(inputlayer, [00,14,14,14])
 model_input_d.register_for_inputlayer(inputlayer, [14,14,14,14])
 
-#connect inner-most layers to upper layer
-model_top.register_for_ae(model_input_a)
-model_top.register_for_ae(model_input_b)
-model_top.register_for_ae(model_input_c)
-model_top.register_for_ae(model_input_d)
+#connect middle layers to input layers
+model_middle_ab.register_for_ae(model_input_a)
+model_middle_ab.register_for_ae(model_input_b)
+model_middle_cd.register_for_ae(model_input_c)
+model_middle_cd.register_for_ae(model_input_d)
 
+#connect middle layers to top layer
+model_top.register_for_ae(model_middle_ab)
+model_top.register_for_ae(model_middle_cd)
 
-inputlayer.feedVideo("data/mnist.mp4", frames=250)
+inputlayer.feedVideo("data/hand.m4v", repeat=10)
 
-
-model_input_a.max_activation_summary()
-model_input_b.max_activation_summary()
-model_input_c.max_activation_summary()
-model_input_d.max_activation_summary()
-model_top.max_activation_summary()
-
-#model.save_parameters()

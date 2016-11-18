@@ -37,6 +37,8 @@ class StackedAutoEncoder:
         # namescope for summary writers
         with tf.name_scope(self.name) as scope:
             self.scope = scope
+            with tf.name_scope("transform") as transform_scope:
+                self.transform_scope = transform_scope
         # layer variables and ops
         self.depth = len(dims)
         self.layers = []
@@ -51,6 +53,8 @@ class StackedAutoEncoder:
 
         # callback to other autoencoders, triggered when transform called.
         self.callbacks = []
+        self.input_buffer = {}
+
 
         log.info("👌 Autoencoder initalized " + self.name)
 
@@ -59,9 +63,64 @@ class StackedAutoEncoder:
         log.info("🖐 Autoencoder " + self.name + " deallocated, closed session.")
 
 
-    # register a new callback in array
-    def registerCallback(self, callback):
-        self.callbacks.append(callback)
+
+
+    ##CALLBACK STUFF
+
+
+    # receive data from other autoencoder or input layer
+    def receive_data_from_ae(self, ae, data):
+        if not ae.name in self.input_buffer:
+            log.warning(self.name + " can't receive data from "+ae.name+", it's not registered.")
+            return
+        #check if buffer is full:
+        if (isinstance(self.input_buffer[ae.name], np.ndarray)):
+            log.warning(self.name + " can't receive data from "+ae.name+", buffer full- still waiting for the other AEs")
+            return
+
+        ##all set!
+        log.debug("succesfully received data from " + ae.name)
+        self.input_buffer[ae.name] = data
+        self.check_input_buffer()
+
+
+    def check_input_buffer(self):
+        #check if all buffers are valid arrays.
+        if all(isinstance(item, np.ndarray) for item in self.input_buffer.values()):
+            log.debug("input buffer full, executing fit_transform")
+            #concatenate data and execute fit_transform
+            data = self.input_buffer.values()          
+            batch_size = data[0].shape[0]
+            features = data[0].shape[1]
+
+            data = np.array(data).reshape([batch_size,features*len(self.input_buffer)])
+            
+            self.fit_transform(data)
+    
+            #clear buffer
+            for key in self.input_buffer:
+                self.input_buffer[key] = None
+
+
+    def register_for_ae(self, ae):
+        if (self.iteration > 0):
+            #TODO: allow this at some point
+            log.warning("Can't register for new data, already run!")
+        else:
+            log.debug(self.name + " registering for input from " + ae.name)
+            #create slot for data
+            self.input_buffer[ae.name] = None
+            #register for callback with other AE
+            ae.callbacks.append(self.receive_data_from_ae)
+
+    def register_for_inputlayer(self, inputlayer, region):
+        #TODO: same mechanic as AE for multiple input layers or other ae's
+        inputlayer.registerCallback(region, self.fit_transform)
+
+
+    ###################################
+
+
 
     # fit given data and return transformed
     def fit_transform(self, x):
@@ -98,19 +157,22 @@ class StackedAutoEncoder:
                              layer=i,
                              epoch=self.epoch[i])
 
-    # transform data and return
     def transform(self, data):
         sess = self.session
 
-        x = tf.constant(data, dtype=tf.float32)
-        for layer, a in zip(self.layers, self.activations):
-            layer = tf.matmul(x, layer['encode_weights']) + layer['encode_biases']
-            x = self.activate(layer, a)
+        with tf.name_scope(self.scope):
+            with tf.name_scope(self.transform_scope):
+                x = tf.constant(data, dtype=tf.float32)
+                for layer, a in zip(self.layers, self.activations):
+                    layer = tf.matmul(x, layer['encode_weights']) + layer['encode_biases']
+                    x = self.activate(layer, a)
+        
+        # make the calculation
         transformed = x.eval(session=sess)
-
+        
         # trigger registered callbacks
         for callback in self.callbacks:
-            callback(transformed)
+            callback(self, transformed)
 
         return transformed
 
@@ -144,7 +206,7 @@ class StackedAutoEncoder:
 
         # put metadata into summaries.
         if self.metadata:
-            SummaryWriter().writer.add_run_metadata(run_metadata, 'step%d' % (self.iteration*epoch + i))
+            SummaryWriter().writer.add_run_metadata(run_metadata, self.name+'_layer'+str(layer)+'_step%d' % (self.iteration*epoch + i))
 
         # run summary operation.
         summary_str = sess.run(self.layers[layer]['summ_op'], feed_dict=feed_dict, options=run_options, run_metadata=run_metadata)
@@ -253,8 +315,8 @@ class StackedAutoEncoder:
         sess = self.session
 
         #layer 0 not initialized.
-        if (not self.layers[0]['encode_weights'] == None):
-            pass
+        if (self.layers[0]['encode_weights'] == None):
+            return
 
         W = self.layers[0]['encode_weights'].eval(session=sess)
 

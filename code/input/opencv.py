@@ -14,13 +14,16 @@ class OpenCVInputLayer(InputLayer):
     def feedWebcam(self, frames=-1):
         self.feedVideo(filename=0, frames=frames)
 
-    def feedVideo(self, filename, frames=-1):
+    def feedVideo(self, filename, frames=-1, repeat=0):
         if not os.path.isfile(filename):
             raise IOError("OpenCVLayer - video file not found!")
 
+        framecount = frames
+        repeat -= 1
+        
         cap = cv2.VideoCapture(filename)
 
-        while(frames != 0):
+        while(framecount != 0):
             isvalid, frame = cap.read()
 
             if (not isvalid):
@@ -30,8 +33,13 @@ class OpenCVInputLayer(InputLayer):
             gray = cv2.cvtColor(res, cv2.COLOR_BGR2GRAY) #TODO: allow colour input.
             self.processFrame(gray)
 
-            if (frames > 0):
-                frames = frames - 1
+            if (framecount > 0):
+                framecount = framecount - 1
+
+        cap.release()
+
+        if (repeat!=0):
+            self.feedVideo(filename, frames=frames, repeat=repeat-1)
 
     def processFrame(self, frame):
         for region, callback, batch in self.callbacks:

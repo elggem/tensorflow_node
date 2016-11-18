@@ -3,7 +3,7 @@
 import logging
 from colorlog import ColoredFormatter
 
-LOG_LEVEL = logging.DEBUG
+LOG_LEVEL = logging.INFO
 
 formatter = ColoredFormatter(
     "%(log_color)s%(levelname)-8s%(reset)s %(message)s",
