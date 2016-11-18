@@ -2,7 +2,7 @@
 import cv2
 import numpy as np
 from . import InputLayer
-
+import os.path
 class OpenCVInputLayer(InputLayer):
     """
     Contains OpenCV to feed in images and video feeds to TF.
@@ -12,6 +12,9 @@ class OpenCVInputLayer(InputLayer):
         self.feedVideo(filename=0, frames=frames)
 
     def feedVideo(self, filename, frames=-1):
+        if not os.path.isfile(filename):
+            raise IOError("OpenCVLayer - video file not found!")
+
         cap = cv2.VideoCapture(filename)
 
         while(frames != 0):

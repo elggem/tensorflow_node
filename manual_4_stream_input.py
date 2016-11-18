@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from model import StackedAutoEncoder
+from model import SummaryWriter
+
 from inputlayer import OpenCVInputLayer
 
 import tensorflow as tf
@@ -12,7 +14,7 @@ from os.path import join as pjoin
 
 #utils.start_tensorboard()
 
-print "recording summaries to " + utils.get_summary_dir()
+print "recording summaries to " + SummaryWriter().directory
 
 models = []
 

@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from model import StackedAutoEncoder
+from model import SummaryWriter
+
 from inputlayer import OpenCVInputLayer
 
 import tensorflow as tf
@@ -12,22 +14,25 @@ from os.path import join as pjoin
 
 #utils.start_tensorboard()
 
-print "recording summaries to " + utils.get_summary_dir()
+print "recording summaries to " + SummaryWriter().directory
 
 model = StackedAutoEncoder(
         dims=[100],
         activations=['linear'], 
         noise='gaussian', 
-        epoch=[250],
+        epoch=[100],
         loss='rmse',
-        lr=0.007
+        lr=0.007,
+        metadata=True,
+        timeline=True
     )
 
 # Initialize input layer, register callback and feed video
-inputlayer = OpenCVInputLayer(output_size=(28,28), batch_size=250)
+inputlayer = OpenCVInputLayer(output_size=(28,28), batch_size=5)
 
 inputlayer.registerCallback([0,0,28,28], model.fit)
 
-inputlayer.feedVideo("data/mnist.mp4", frames=250)
+inputlayer.feedVideo("data/mnist.mp4", frames=20)
 
-#model.write_activation_summary()
+model.write_activation_summary()
+model.save_parameters()
