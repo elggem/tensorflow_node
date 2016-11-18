@@ -9,17 +9,21 @@ LOG_LEVEL = logging.INFO
 #formatter = ColoredFormatter(LOGFORMAT)
 
 formatter = ColoredFormatter(
-    "%(log_color)s%(levelname)-8s%(reset)s %(message)s",
+    "%(log_color)s%(levelname)-8s%(reset)s %(message_log_color)s%(message)s",
     datefmt=None,
     reset=True,
     log_colors={
-        'DEBUG':    'cyan',
+        'DEBUG':    'yellow',
         'INFO':     'green',
-        'WARNING':  'yellow',
+        'WARNING':  'red',
         'ERROR':    'red',
         'CRITICAL': 'red,bg_white',
     },
-    secondary_log_colors={},
+    secondary_log_colors={
+        'message': {
+            'DEBUG':    'yellow'
+        }
+    },
     style='%'
 )
 
