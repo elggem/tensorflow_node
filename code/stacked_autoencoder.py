@@ -2,10 +2,12 @@
 
 import numpy as np
 import random
-from utils import SummaryWriter
-
 import tensorflow as tf
 from tensorflow.python.client import timeline
+
+from utils import SummaryWriter
+from utils.logger import log
+
 allowed_activations = ['sigmoid', 'tanh', 'softmax', 'relu', 'linear']
 allowed_noises = [None, 'gaussian', 'mask']
 allowed_losses = ['rmse', 'cross-entropy']
@@ -50,11 +52,11 @@ class StackedAutoEncoder:
         # callback to other autoencoders, triggered when transform called.
         self.callbacks = []
 
-        print ("👌 Autoencoder initalized " + self.name)
+        log.info("👌 Autoencoder initalized " + self.name)
 
     def __del__(self):
         self.session.close()
-        print ("🖐 Autoencoder " + self.name + " deallocated, closed session.")
+        log.info("🖐 Autoencoder " + self.name + " deallocated, closed session.")
 
 
     # register a new callback in array
@@ -63,7 +65,7 @@ class StackedAutoEncoder:
 
     # fit given data and return transformed
     def fit_transform(self, x):
-        #print self.name+": received shape " + str(x.shape)
+        log.debug(self.name+": received shape " + str(x.shape))
         self.fit(x)
         return self.transform(x)
 
@@ -73,7 +75,7 @@ class StackedAutoEncoder:
         self.iteration += 1
 
         for i in range(self.depth):
-            print(self.name + ' layer {0}'.format(i + 1)+' iteration {0}'.format(self.iteration))
+            log.info(self.name + ' layer {0}'.format(i + 1)+' iteration {0}'.format(self.iteration))
 
             #if this is the first iteration initialize the graph
             if (self.iteration == 1):
@@ -138,7 +140,7 @@ class StackedAutoEncoder:
             ctf = tl.generate_chrome_trace_format()
             with open(SummaryWriter().home_out('timelines')+"/"+self.name+"_layer_"+str(layer)+"_iteration_"+str(self.iteration)+".json", 'w') as f:
                 f.write(ctf)
-                print "📊 written timeline trace."
+                log.info("📊 written timeline trace.")
 
         # put metadata into summaries.
         if self.metadata:
@@ -236,13 +238,13 @@ class StackedAutoEncoder:
         saver = tf.train.Saver(to_be_saved)
         saver.save(sess, SummaryWriter().home_out('checkpoints')+"/"+self.name+"_"+str(self.iteration))
 
-        print("💾 model saved.")
+        log.info("💾 model saved.")
 
     def load_parameters(self, filename):
         raise NotImplementedError()
         #TODO
         #self.saver.restore(sess, ....)
-        #print("💾✅ model restored.")
+        #log.info("💾✅ model restored.")
 
 
     # visualization of maximum activation for all hidden neurons on layer 0
@@ -293,7 +295,7 @@ class StackedAutoEncoder:
         SummaryWriter().writer.add_summary(image_summary_str, self.iteration)
         SummaryWriter().writer.flush()
 
-        print("📈 activation image plotted.")
+        log.info("📈 activation image plotted.")
 
     # plot visualization of last activation to summary
     def transformed_summary(self):

@@ -1,20 +1,41 @@
 # -*- coding: utf-8 -*-
 
 import logging
-
-LOG_LEVEL = logging.DEBUG
-LOGFORMAT = "  %(log_color)s%(levelname)-8s%(reset)s | %(log_color)s%(message)s%(reset)s"
-
 from colorlog import ColoredFormatter
 
+LOG_LEVEL = logging.INFO
+
+#LOGFORMAT = "  %(log_color)s%(levelname)-8s%(reset)s | %(log_color)s%(message)s%(reset)s"
+#formatter = ColoredFormatter(LOGFORMAT)
+
+formatter = ColoredFormatter(
+    "%(log_color)s%(levelname)-8s%(reset)s %(message)s",
+    datefmt=None,
+    reset=True,
+    log_colors={
+        'DEBUG':    'cyan',
+        'INFO':     'green',
+        'WARNING':  'yellow',
+        'ERROR':    'red',
+        'CRITICAL': 'red,bg_white',
+    },
+    secondary_log_colors={},
+    style='%'
+)
+
 logging.root.setLevel(LOG_LEVEL)
-formatter = ColoredFormatter(LOGFORMAT)
 stream = logging.StreamHandler()
 stream.setLevel(LOG_LEVEL)
 stream.setFormatter(formatter)
-log = logging.getLogger('pythonConfig')
-log.setLevel(LOG_LEVEL)
-log.addHandler(stream)
+
+log = logging.getLogger()
+
+if not len(log.handlers):
+    log.setLevel(LOG_LEVEL)
+    log.addHandler(stream)
+
+
+## TODO: file output
 
 #log.debug("A quirky message only developers care about")
 #log.info("Curious users might want to know this")

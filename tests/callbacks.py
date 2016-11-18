@@ -1,15 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import tensorflow as tf
-import numpy as np
-
 from code import StackedAutoEncoder
 from code import SummaryWriter
 from code import OpenCVInputLayer
 from code import log
 
-print "recording summaries to " + SummaryWriter().directory
+log.info("recording summaries to " + SummaryWriter().directory)
 
 model_input = StackedAutoEncoder(
         name="ae-input",

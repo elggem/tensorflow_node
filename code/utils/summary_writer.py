@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import os
-from os.path import join as pjoin
-
 import datetime
 import tensorflow as tf
+from os.path import join as pjoin
+from logger import log
 
 # Singleton
 class SummaryWriter(object):
@@ -16,7 +16,7 @@ class SummaryWriter(object):
 
     def __init__(self):
         if not hasattr(self, 'writer'):
-            print "📊 initializing summary writer."
+            log.debug("📊 initializing summary writer.")
             now = datetime.datetime.now()
             self.directory = self.home_out('summaries')+now.strftime("/%Y-%m-%d-%s")
             self.writer = tf.train.SummaryWriter(self.directory)

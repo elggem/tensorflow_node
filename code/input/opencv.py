@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
-import cv2
+
 import numpy as np
-from . import InputLayer
+import cv2
 import os.path
+
+from . import InputLayer
+
 class OpenCVInputLayer(InputLayer):
     """
     Contains OpenCV to feed in images and video feeds to TF.
