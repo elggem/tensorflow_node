@@ -1,22 +1,14 @@
+# -*- coding: utf-8 -*-
+
 import os
 import signal
 import subprocess
 import sys
-from os.path import join as pjoin
-import datetime
 
-import numpy as np
-
-import tensorflow as tf
 from tensorflow import tensorboard as tb
+from summary_writer import SummaryWriter
 
-def home_out(path):
-  output_path = pjoin(os.getcwd(), 'output', path)
-  if not os.path.exists(output_path):
-    os.makedirs(output_path)
-  return output_path
-
-_tb_pid_file = home_out(".tbpid")
+_tb_pid_file = SummaryWriter().get_output_folder(".tbpid")
 _tb_path = os.path.join(os.path.dirname(tb.__file__), 'tensorboard.py')
 _tb_port = "6006"
 
@@ -35,7 +27,7 @@ def start_tensorboard():
 
   devnull = open(os.devnull, 'wb')
   p = subprocess.Popen(['nohup', sys.executable,
-                        '-u', _tb_path, '--logdir={0}'.format(get_summary_dir()),
+                        '-u', _tb_path, '--logdir={0}'.format(SummaryWriter().get_summary_folder()),
                         '--port=' + _tb_port], stdout=devnull, stderr=devnull)
   with open(_tb_pid_file, 'w') as f:
     f.write(str(p.pid))

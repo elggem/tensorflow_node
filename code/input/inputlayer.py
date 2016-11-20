@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+import sys
+sys.path.append("./code")
+from utils.logger import log
 
 class InputLayer:
     """
@@ -16,14 +19,14 @@ class InputLayer:
         self.output_size = output_size
         self.assertions()
         self.callbacks = []
-        print ("📸 Input Layer initalized")
+        log.debug("📸 Input Layer initalized")
 
-    def registerCallback(self, region, callback):
+    def register_callback(self, region, callback):
         #assert callback is a function
         self.callbacks.append([region, callback, []])
-        print ("📸 callback registered")
+        log.debug("📸 callback registered")
 
 
-    def deregisterCallback(self, callback):
+    def deregister_callback(self, callback):
         raise NotImplementedError()
 

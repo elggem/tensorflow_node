@@ -1,23 +1,28 @@
 # -*- coding: utf-8 -*-
-import cv2
+
 import numpy as np
-from . import InputLayer
+import cv2
 import os.path
+
+from . import InputLayer
+
 class OpenCVInputLayer(InputLayer):
     """
     Contains OpenCV to feed in images and video feeds to TF.
     """
 
-    def feedWebcam(self, frames=-1):
-        self.feedVideo(filename=0, frames=frames)
+    def feed_webcam(self, frames=-1):
+        self.feed_video(filename=0, frames=frames)
 
-    def feedVideo(self, filename, frames=-1):
+    def feed_video(self, filename, frames=-1, repeat=0):
         if not os.path.isfile(filename):
             raise IOError("OpenCVLayer - video file not found!")
 
+        framecount = frames
+        
         cap = cv2.VideoCapture(filename)
 
-        while(frames != 0):
+        while(framecount != 0):
             isvalid, frame = cap.read()
 
             if (not isvalid):
@@ -25,12 +30,17 @@ class OpenCVInputLayer(InputLayer):
 
             res = cv2.resize(frame, self.output_size, interpolation = cv2.INTER_CUBIC)
             gray = cv2.cvtColor(res, cv2.COLOR_BGR2GRAY) #TODO: allow colour input.
-            self.processFrame(gray)
+            self.process_frame(gray)
 
-            if (frames > 0):
-                frames = frames - 1
+            if (framecount > 0):
+                framecount = framecount - 1
 
-    def processFrame(self, frame):
+        cap.release()
+
+        if (repeat!=0):
+            self.feed_video(filename, frames=frames, repeat=repeat-1)
+
+    def process_frame(self, frame):
         for region, callback, batch in self.callbacks:
             x = region[0]
             y = region[1]
