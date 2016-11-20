@@ -19,6 +19,8 @@ class StackedAutoEncoder:
     extended for standalone use in DeSTIN perception framework
     """
 
+
+
     def __init__(self, dims, activations, name='ae', epoch=100, noise=None, loss='rmse', lr=0.001, metadata=False, timeline=False):
         # object initialization
         self.name = name+'-%08x' % random.getrandbits(32)
@@ -62,63 +64,6 @@ class StackedAutoEncoder:
         self.session.close()
         log.info("🖐 Autoencoder " + self.name + " deallocated, closed session.")
 
-
-
-
-    ##CALLBACK STUFF
-
-
-    # receive data from other autoencoder or input layer
-    def receive_data_from_ae(self, ae, data):
-        if not ae.name in self.input_buffer:
-            log.warning(self.name + " can't receive data from "+ae.name+", it's not registered.")
-            return
-        #check if buffer is full:
-        if (isinstance(self.input_buffer[ae.name], np.ndarray)):
-            log.warning(self.name + " can't receive data from "+ae.name+", buffer full- still waiting for the other AEs")
-            return
-
-        ##all set!
-        log.debug("succesfully received data from " + ae.name)
-        self.input_buffer[ae.name] = data
-        self.check_input_buffer()
-
-
-    def check_input_buffer(self):
-        #check if all buffers are valid arrays.
-        if all(isinstance(item, np.ndarray) for item in self.input_buffer.values()):
-            log.debug("input buffer full, executing fit_transform")
-            #concatenate data and execute fit_transform
-            data = self.input_buffer.values()          
-            batch_size = data[0].shape[0]
-            features = data[0].shape[1]
-
-            data = np.array(data).reshape([batch_size,features*len(self.input_buffer)])
-            
-            self.fit_transform(data)
-    
-            #clear buffer
-            for key in self.input_buffer:
-                self.input_buffer[key] = None
-
-
-    def register_for_ae(self, ae):
-        if (self.iteration > 0):
-            #TODO: allow this at some point
-            log.warning("Can't register for new data, already run!")
-        else:
-            log.debug(self.name + " registering for input from " + ae.name)
-            #create slot for data
-            self.input_buffer[ae.name] = None
-            #register for callback with other AE
-            ae.callbacks.append(self.receive_data_from_ae)
-
-    def register_for_inputlayer(self, inputlayer, region):
-        #TODO: same mechanic as AE for multiple input layers or other ae's
-        inputlayer.register_callback(region, self.fit_transform)
-
-
-    ###################################
 
 
 
@@ -168,14 +113,7 @@ class StackedAutoEncoder:
                     x = self.activate(layer, a)
         
         # make the calculation
-        transformed = x.eval(session=sess)
-        
-        # trigger registered callbacks
-        for callback in self.callbacks:
-            callback(self, transformed)
-
-        return transformed
-
+        return x.eval(session=sess)
 
     # main run call to fit data for given layer
     def run(self, data_x, data_x_, layer, epoch):
@@ -286,6 +224,72 @@ class StackedAutoEncoder:
                 self.layers[layer]['summ_op'] = merged_summary_op
 
 
+
+
+
+    # register for data from another autoencoder.
+    def register_for_ae(self, ae):
+        if (self.iteration > 0):
+            #TODO: allow this at some point
+            log.warning("Can't register for new data, already run!")
+        else:
+            log.debug(self.name + " registering for input from " + ae.name)
+            #create slot for data
+            self.input_buffer[ae.name] = None
+            #register for callback with other AE
+            ae.callbacks.append(self.receive_data_from)
+
+    # register for data from an input layer
+    def register_for_inputlayer(self, inputlayer, region):
+        if (self.iteration > 0):
+            #TODO: allow this at some point
+            log.warning("Can't register for new data, already run!")
+        else:
+            log.debug(self.name + " registering for input from an inputlayer")
+            inputlayer.register_callback(region, self.fit_transform)
+
+    # receive data from other autoencoder or input layer and store in buffer
+    def receive_data_from(self, from_name, data):
+        if not from_name in self.input_buffer:
+            log.warning(self.name + " can't receive data from "+from_name+", it's not registered.")
+            return
+        #check if buffer is full:
+        if (isinstance(self.input_buffer[from_name], np.ndarray)):
+            log.warning(self.name + " can't receive data from "+from_name+", buffer full- still waiting for the other AEs")
+            return
+
+        ##all set!
+        log.debug("succesfully received data from " + from_name)
+        self.input_buffer[from_name] = data
+        self.check_input_buffer()
+
+    # check if input_buffer is full and if yes, execute transform and trigger our callbacks.
+    def check_input_buffer(self):
+        # check if all buffers are valid arrays.
+        if all(isinstance(item, np.ndarray) for item in self.input_buffer.values()):
+            log.debug("input buffer complete, executing fit_transform and triggering callbacks...")
+
+            # concatenate data and execute fit_transform
+            data = self.input_buffer.values()          
+            batch_size = data[0].shape[0]
+            features = data[0].shape[1]
+            data = np.array(data).reshape([batch_size,features*len(self.input_buffer)])
+            
+            # transform!
+            self.emit_callbacks(self.fit_transform(data))
+    
+            #clear buffer
+            for key in self.input_buffer:
+                self.input_buffer[key] = None
+
+    def emit_callbacks(self, data):
+        # trigger registered callbacks
+        for callback in self.callbacks:
+            callback(self.name, transformed)
+
+
+
+
     # save parameters to disk using tf.train.Saver
     def save_parameters(self):
         sess = self.session
@@ -307,6 +311,9 @@ class StackedAutoEncoder:
         #TODO
         #self.saver.restore(sess, ....)
         #log.info("💾✅ model restored.")
+
+
+
 
 
     # visualization of maximum activation for all hidden neurons on layer 0
@@ -363,6 +370,10 @@ class StackedAutoEncoder:
     def transformed_summary(self):
         raise NotImplementedError()
 
+
+
+
+
     # noise for denoising AE.
     def add_noise(self, x):
         if self.noise == 'gaussian':
@@ -390,6 +401,9 @@ class StackedAutoEncoder:
             return tf.nn.tanh(linear, name='encoded')
         elif name == 'relu':
             return tf.nn.relu(linear, name='encoded')
+
+
+
 
 
     # sanity checks
