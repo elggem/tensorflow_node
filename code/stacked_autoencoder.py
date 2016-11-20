@@ -338,9 +338,7 @@ class StackedAutoEncoder:
         # so we always plot an even number instead of padding.
         output_wh = int(np.floor(np.power(W.shape[1],0.5)))
         output_shape = [input_wh*output_wh, input_wh*output_wh]
-
-        print output_wh
-
+        
         outputs = []
         output_rows = []
 

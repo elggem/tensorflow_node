@@ -9,7 +9,7 @@ from code import log
 log.info("recording summaries to " + SummaryWriter().directory)
 
 model_input_a = StackedAutoEncoder(
-        name="ae-input",
+        name="ae-input-A",
         dims=[100],
         activations=['linear'], 
         noise='gaussian', 
@@ -19,7 +19,7 @@ model_input_a = StackedAutoEncoder(
     )
 
 model_input_b = StackedAutoEncoder(
-        name="ae-input",
+        name="ae-input-B",
         dims=[200],
         activations=['linear'], 
         noise='gaussian', 
@@ -29,7 +29,7 @@ model_input_b = StackedAutoEncoder(
     )
 
 model_input_c = StackedAutoEncoder(
-        name="ae-input",
+        name="ae-input-C",
         dims=[20],
         activations=['linear'], 
         noise='gaussian', 
@@ -39,7 +39,7 @@ model_input_c = StackedAutoEncoder(
     )
 
 model_input_d = StackedAutoEncoder(
-        name="ae-input",
+        name="ae-input-D",
         dims=[30],
         activations=['linear'], 
         noise='gaussian', 
@@ -60,13 +60,13 @@ model_top = StackedAutoEncoder(
     )
 
 # Initialize input layer, register callback and feed video
-inputlayer = OpenCVInputLayer(output_size=(28,28), batch_size=25)
+inputlayer = OpenCVInputLayer(output_size=(28,28), batch_size=250)
 
 #connect a to left and b to right side of input.
-model_input_a.register_for_inputlayer(inputlayer, [00,00,14,14])
-model_input_b.register_for_inputlayer(inputlayer, [14,00,14,14])
-model_input_c.register_for_inputlayer(inputlayer, [00,14,14,14])
-model_input_d.register_for_inputlayer(inputlayer, [14,14,14,14])
+model_input_a.register_for_inputlayer(inputlayer, [07,07,14,14])
+model_input_b.register_for_inputlayer(inputlayer, [00,00,28,28])
+model_input_c.register_for_inputlayer(inputlayer, [00,14,14,28])
+model_input_d.register_for_inputlayer(inputlayer, [14,00,28,14])
 
 #connect inner-most layers to upper layer
 model_top.register_for_ae(model_input_a)
@@ -75,7 +75,7 @@ model_top.register_for_ae(model_input_c)
 model_top.register_for_ae(model_input_d)
 
 
-inputlayer.feed_video("data/mnist.mp4", frames=25)
+inputlayer.feed_video("data/mnist.mp4", frames=25000)
 
 model_top.transformed_summary()
 
