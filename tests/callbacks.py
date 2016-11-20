@@ -20,7 +20,7 @@ model_input_a = StackedAutoEncoder(
 
 model_input_b = StackedAutoEncoder(
         name="ae-input",
-        dims=[100],
+        dims=[200],
         activations=['linear'], 
         noise='gaussian', 
         epoch=[100],
@@ -30,7 +30,7 @@ model_input_b = StackedAutoEncoder(
 
 model_input_c = StackedAutoEncoder(
         name="ae-input",
-        dims=[100],
+        dims=[20],
         activations=['linear'], 
         noise='gaussian', 
         epoch=[100],
@@ -40,7 +40,7 @@ model_input_c = StackedAutoEncoder(
 
 model_input_d = StackedAutoEncoder(
         name="ae-input",
-        dims=[100],
+        dims=[30],
         activations=['linear'], 
         noise='gaussian', 
         epoch=[100],
@@ -75,8 +75,9 @@ model_top.register_for_ae(model_input_c)
 model_top.register_for_ae(model_input_d)
 
 
-inputlayer.feed_video("data/mnist.mp4", frames=250)
+inputlayer.feed_video("data/mnist.mp4", frames=25)
 
+model_top.transformed_summary()
 
 model_input_a.max_activation_summary()
 model_input_b.max_activation_summary()

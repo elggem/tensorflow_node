@@ -26,6 +26,7 @@ class StackedAutoEncoder:
         self.name = name+'-%08x' % random.getrandbits(32)
         self.session = tf.Session()
         self.iteration = 0 # one iteration is fitting batch_size*epoch times.
+        self.last_activation = None # stores the transformation performed last.
         # parameters
         self.lr = lr
         self.loss = loss
@@ -113,7 +114,11 @@ class StackedAutoEncoder:
                     x = self.activate(layer, a)
         
         # make the calculation
-        return x.eval(session=sess)
+        transformed = x.eval(session=sess)
+        self.last_activation = transformed
+        self.emit_callbacks(transformed)
+
+        return transformed
 
     # main run call to fit data for given layer
     def run(self, data_x, data_x_, layer, epoch):
@@ -272,11 +277,10 @@ class StackedAutoEncoder:
             # concatenate data and execute fit_transform
             data = self.input_buffer.values()          
             batch_size = data[0].shape[0]
-            features = data[0].shape[1]
-            data = np.array(data).reshape([batch_size,features*len(self.input_buffer)])
+            data = np.concatenate(tuple(data), axis=1)
             
             # transform!
-            self.emit_callbacks(self.fit_transform(data))
+            self.fit_transform(data)
     
             #clear buffer
             for key in self.input_buffer:
@@ -285,7 +289,7 @@ class StackedAutoEncoder:
     def emit_callbacks(self, data):
         # trigger registered callbacks
         for callback in self.callbacks:
-            callback(self.name, transformed)
+            callback(self.name, data)
 
 
 
@@ -330,8 +334,12 @@ class StackedAutoEncoder:
         input_wh = int(np.ceil(np.power(W.shape[0],0.5)))
         input_shape = [input_wh, input_wh]
 
-        output_wh = int(np.ceil(np.power(W.shape[1],0.5)))
+        ## note we floor the number of plotted outputs here, 
+        # so we always plot an even number instead of padding.
+        output_wh = int(np.floor(np.power(W.shape[1],0.5)))
         output_shape = [input_wh*output_wh, input_wh*output_wh]
+
+        print output_wh
 
         outputs = []
         output_rows = []
@@ -340,25 +348,25 @@ class StackedAutoEncoder:
 
         #calculate for each hidden neuron
         for i in xrange(W.shape[1]):
-            output = np.array(np.zeros(W.shape[0]),dtype='float32')
+            output = np.array(np.zeros(input_wh*input_wh),dtype='float32')
         
             W_ij_sum = 0
 
-            for j in xrange(output.size):
+            for j in xrange(W.shape[0]):
                 W_ij_sum += np.power(W[j][i],2)
         
-            for j in xrange(output.size): 
+            for j in xrange(W.shape[0]):
                 W_ij = W[j][i]
                 output[j] = (W_ij)/(np.sqrt(W_ij_sum))
         
             outputs.append(output.reshape(input_shape))
-        
-        for i in xrange(10):
-            output_rows.append(np.concatenate(outputs[i*10:(i*10)+10], 0))
+
+        for i in xrange(output_wh):
+            output_rows.append(np.concatenate(outputs[i*output_wh:(i*output_wh)+output_wh], 0))
 
         activation_image = np.concatenate(output_rows, 1)
         
-        image_summary_op = tf.image_summary("activation_plot_"+self.name, np.reshape(activation_image, (1, output_shape[0], output_shape[1], 1)))
+        image_summary_op = tf.image_summary("max_activation_"+self.name, np.reshape(activation_image, (1, output_shape[0], output_shape[1], 1)))
         image_summary_str = sess.run(image_summary_op)
         
         SummaryWriter().writer.add_summary(image_summary_str, self.iteration)
@@ -366,11 +374,33 @@ class StackedAutoEncoder:
 
         log.info("📈 activation image plotted.")
 
-    # plot visualization of last activation to summary
+    # plot visualization of last activation batch to summary
     def transformed_summary(self):
-        raise NotImplementedError()
+        sess = self.session
 
+        activation_wh = int(np.ceil(np.power(self.last_activation.shape[1],0.5)))
+        data_shape = [activation_wh, activation_wh]
 
+        output_wh = int(np.floor(np.power(self.last_activation.shape[0],0.5)))
+
+        output_rows = []
+        outputs = []
+
+        for activation in self.last_activation:
+            outputs.append(activation.reshape(data_shape))
+
+        for i in xrange(output_wh):
+            output_rows.append(np.concatenate(outputs[i*output_wh:(i*output_wh)+output_wh], 0))
+
+        activation_image = np.concatenate(output_rows, 1)
+
+        image_summary_op = tf.image_summary("transformed_"+self.name, np.reshape(activation_image, (1, data_shape[0]*output_wh, data_shape[1]*output_wh, 1)))
+        image_summary_str = sess.run(image_summary_op)
+        
+        SummaryWriter().writer.add_summary(image_summary_str, self.iteration)
+        SummaryWriter().writer.flush()
+
+        log.info("📈 transformed input image plotted.")
 
 
 
