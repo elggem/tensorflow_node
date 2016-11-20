@@ -115,7 +115,7 @@ class StackedAutoEncoder:
 
     def register_for_inputlayer(self, inputlayer, region):
         #TODO: same mechanic as AE for multiple input layers or other ae's
-        inputlayer.registerCallback(region, self.fit_transform)
+        inputlayer.register_callback(region, self.fit_transform)
 
 
     ###################################
@@ -200,7 +200,7 @@ class StackedAutoEncoder:
         if self.metadata and self.timeline:
             tl = timeline.Timeline(run_metadata.step_stats)
             ctf = tl.generate_chrome_trace_format()
-            with open(SummaryWriter().home_out('timelines')+"/"+self.name+"_layer_"+str(layer)+"_iteration_"+str(self.iteration)+".json", 'w') as f:
+            with open(SummaryWriter().get_output_folder('timelines')+"/"+self.name+"_layer_"+str(layer)+"_iteration_"+str(self.iteration)+".json", 'w') as f:
                 f.write(ctf)
                 log.info("📊 written timeline trace.")
 
@@ -298,7 +298,7 @@ class StackedAutoEncoder:
             to_be_saved['layer'+str(layer)+'_decode_biases'] = self.layers[layer]['decode_biases']
 
         saver = tf.train.Saver(to_be_saved)
-        saver.save(sess, SummaryWriter().home_out('checkpoints')+"/"+self.name+"_"+str(self.iteration))
+        saver.save(sess, SummaryWriter().get_output_folder('checkpoints')+"/"+self.name+"_"+str(self.iteration))
 
         log.info("💾 model saved.")
 

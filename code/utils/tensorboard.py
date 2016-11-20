@@ -8,7 +8,7 @@ import sys
 from tensorflow import tensorboard as tb
 from summary_writer import SummaryWriter
 
-_tb_pid_file = SummaryWriter().home_out(".tbpid")
+_tb_pid_file = SummaryWriter().get_output_folder(".tbpid")
 _tb_path = os.path.join(os.path.dirname(tb.__file__), 'tensorboard.py')
 _tb_port = "6006"
 
@@ -27,7 +27,7 @@ def start_tensorboard():
 
   devnull = open(os.devnull, 'wb')
   p = subprocess.Popen(['nohup', sys.executable,
-                        '-u', _tb_path, '--logdir={0}'.format(SummaryWriter().directory),
+                        '-u', _tb_path, '--logdir={0}'.format(SummaryWriter().get_summary_folder()),
                         '--port=' + _tb_port], stdout=devnull, stderr=devnull)
   with open(_tb_pid_file, 'w') as f:
     f.write(str(p.pid))

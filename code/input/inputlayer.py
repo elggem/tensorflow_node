@@ -21,12 +21,12 @@ class InputLayer:
         self.callbacks = []
         log.debug("📸 Input Layer initalized")
 
-    def registerCallback(self, region, callback):
+    def register_callback(self, region, callback):
         #assert callback is a function
         self.callbacks.append([region, callback, []])
         log.debug("📸 callback registered")
 
 
-    def deregisterCallback(self, callback):
+    def deregister_callback(self, callback):
         raise NotImplementedError()
 

@@ -11,10 +11,10 @@ class OpenCVInputLayer(InputLayer):
     Contains OpenCV to feed in images and video feeds to TF.
     """
 
-    def feedWebcam(self, frames=-1):
-        self.feedVideo(filename=0, frames=frames)
+    def feed_webcam(self, frames=-1):
+        self.feed_video(filename=0, frames=frames)
 
-    def feedVideo(self, filename, frames=-1, repeat=0):
+    def feed_video(self, filename, frames=-1, repeat=0):
         if not os.path.isfile(filename):
             raise IOError("OpenCVLayer - video file not found!")
 
@@ -30,7 +30,7 @@ class OpenCVInputLayer(InputLayer):
 
             res = cv2.resize(frame, self.output_size, interpolation = cv2.INTER_CUBIC)
             gray = cv2.cvtColor(res, cv2.COLOR_BGR2GRAY) #TODO: allow colour input.
-            self.processFrame(gray)
+            self.process_frame(gray)
 
             if (framecount > 0):
                 framecount = framecount - 1
@@ -38,9 +38,9 @@ class OpenCVInputLayer(InputLayer):
         cap.release()
 
         if (repeat!=0):
-            self.feedVideo(filename, frames=frames, repeat=repeat-1)
+            self.feed_video(filename, frames=frames, repeat=repeat-1)
 
-    def processFrame(self, frame):
+    def process_frame(self, frame):
         for region, callback, batch in self.callbacks:
             x = region[0]
             y = region[1]

@@ -75,7 +75,7 @@ model_top.register_for_ae(model_input_c)
 model_top.register_for_ae(model_input_d)
 
 
-inputlayer.feedVideo("data/mnist.mp4", frames=250)
+inputlayer.feed_video("data/mnist.mp4", frames=250)
 
 
 model_input_a.max_activation_summary()

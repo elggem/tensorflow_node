@@ -20,8 +20,8 @@ model = StackedAutoEncoder(
 # Initialize input layer, register callback and feed video
 inputlayer = OpenCVInputLayer(output_size=(28,28), batch_size=250)
 
-inputlayer.registerCallback([0,0,28,28], model.fit_transform)
+model.register_for_inputlayer(inputlayer, [0,0,28,28])
 
-inputlayer.feedVideo("data/mnist.mp4", frames=30000)
+inputlayer.feed_video("data/mnist.mp4", frames=30000)
 
 model.max_activation_summary()

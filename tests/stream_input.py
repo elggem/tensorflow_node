@@ -23,12 +23,12 @@ for _ in xrange(4):
 # Initialize input layer, register callback and feed video
 inputlayer = OpenCVInputLayer(output_size=(32,32), batch_size=1)
 
-inputlayer.registerCallback([00,00,16,16], models[0].fit)
-inputlayer.registerCallback([16,00,16,16], models[1].fit)
-inputlayer.registerCallback([00,16,16,16], models[2].fit)
-inputlayer.registerCallback([16,16,16,16], models[3].fit)
+models[0].register_for_inputlayer(inputlayer, [00,00,16,16])
+models[1].register_for_inputlayer(inputlayer, [16,00,16,16])
+models[2].register_for_inputlayer(inputlayer, [00,16,16,16])
+models[3].register_for_inputlayer(inputlayer, [16,16,16,16])
 
-inputlayer.feedVideo("data/hand.m4v", frames=20)
+inputlayer.feed_video("data/hand.m4v", frames=20)
 
 for model in models:
     model.max_activation_summary()

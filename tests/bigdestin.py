@@ -6,7 +6,7 @@ from code import SummaryWriter
 from code import OpenCVInputLayer
 from code import log
 
-log.info("recording summaries to " + SummaryWriter().directory)
+log.info("recording summaries to " + SummaryWriter().get_summary_folder)
 
 model_input_a = StackedAutoEncoder(
         name="ae-a",
@@ -99,5 +99,5 @@ model_middle_cd.register_for_ae(model_input_d)
 model_top.register_for_ae(model_middle_ab)
 model_top.register_for_ae(model_middle_cd)
 
-inputlayer.feedVideo("data/hand.m4v", repeat=10)
+inputlayer.feed_video("data/hand.m4v", repeat=10)
 
