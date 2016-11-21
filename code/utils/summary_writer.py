@@ -32,4 +32,4 @@ class SummaryWriter(object):
       return output_path
 
     def get_summary_folder(self):
-        return directory
+        return self.directory

@@ -6,7 +6,7 @@ from code import SummaryWriter
 from code import OpenCVInputLayer
 from code import log
 
-log.info("recording summaries to " + SummaryWriter().get_summary_folder)
+log.info("recording summaries to " + SummaryWriter().get_summary_folder())
 
 model_input_a = StackedAutoEncoder(
         name="ae-a",
