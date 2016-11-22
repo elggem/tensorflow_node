@@ -21,7 +21,7 @@ class StackedAutoEncoder:
 
 
 
-    def __init__(self, dims, encoding_activations, decoding_activations=None, name='ae', epoch=100, noise=None, loss='rmse', lr=0.001, metadata=False, timeline=False):
+    def __init__(self, dims, activations, encoding_activations=None, decoding_activations=None, name='ae', epoch=100, noise=None, loss='rmse', lr=0.001, metadata=False, timeline=False):
         # object initialization
         self.name = name+'-%08x' % random.getrandbits(32)
         self.session = tf.Session()
@@ -30,12 +30,16 @@ class StackedAutoEncoder:
         # parameters
         self.lr = lr
         self.loss = loss
-        self.encoding_activations = encoding_activations
-        # initialize activations symmetric if they are not given.
-        if (decoding_activations == None):
-            self.decoding_activations = encoding_activations
-        else:
+        
+        self.encoding_activations = activations
+        self.decoding_activations = activations
+
+        if (encoding_activations != None):
+            self.encoding_activations = encoding_activations
+
+        if (decoding_activations != None):
             self.decoding_activations = decoding_activations
+
         self.noise = noise
         self.epoch = epoch
         self.dims = dims
@@ -363,7 +367,7 @@ class StackedAutoEncoder:
             for j in xrange(W.shape[0]):
                 W_ij = W[j][i]
                 output[j] = (W_ij)/(np.sqrt(W_ij_sum))
-        
+
             outputs.append(output.reshape(input_shape))
 
         for i in xrange(output_wh):
