@@ -4,6 +4,7 @@ import numpy as np
 import sys
 sys.path.append("./code")
 from utils.logger import log
+import random
 
 class InputLayer:
     """
@@ -15,6 +16,7 @@ class InputLayer:
         assert(42==42)
     
     def __init__(self, batch_size=1, output_size=(28,28)):
+        self.name = 'inputlayer-%08x' % random.getrandbits(32)
         self.batch_size = batch_size
         self.output_size = output_size
         self.assertions()

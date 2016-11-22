@@ -63,16 +63,16 @@ model_top = StackedAutoEncoder(
 inputlayer = OpenCVInputLayer(output_size=(28,28), batch_size=250)
 
 #connect a to left and b to right side of input.
-model_input_a.register_for_inputlayer(inputlayer, [07,07,14,14])
-model_input_b.register_for_inputlayer(inputlayer, [00,00,28,28])
-model_input_c.register_for_inputlayer(inputlayer, [00,14,14,28])
-model_input_d.register_for_inputlayer(inputlayer, [14,00,28,14])
+model_input_a.register_for(inputlayer, [07,07,14,14])
+model_input_b.register_for(inputlayer, [00,00,28,28])
+model_input_c.register_for(inputlayer, [00,14,14,28])
+model_input_d.register_for(inputlayer, [14,00,28,14])
 
 #connect inner-most layers to upper layer
-model_top.register_for_ae(model_input_a)
-model_top.register_for_ae(model_input_b)
-model_top.register_for_ae(model_input_c)
-model_top.register_for_ae(model_input_d)
+model_top.register_for(model_input_a)
+model_top.register_for(model_input_b)
+model_top.register_for(model_input_c)
+model_top.register_for(model_input_d)
 
 
 inputlayer.feed_video("data/mnist.mp4", frames=25000)

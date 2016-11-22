@@ -88,6 +88,10 @@ class StackedAutoEncoder:
         # increase iteration counter
         self.iteration += 1
 
+        # DEBUG: plot every 10 iterations.
+        if (self.iteration % 10 == 1):
+            self.max_activation_summary()
+
         for i in range(self.depth):
             log.info(self.name + ' layer {0}'.format(i + 1)+' iteration {0}'.format(self.iteration))
 
@@ -244,39 +248,39 @@ class StackedAutoEncoder:
 
 
     # register for data from another autoencoder.
-    def register_for_ae(self, ae):
+    def register_for(self, sender, region=None):
         if (self.iteration > 0):
             #TODO: allow this at some point
             log.warning("Can't register for new data, already run!")
         else:
-            log.debug(self.name + " registering for input from " + ae.name)
-            #create slot for data
-            self.input_buffer[ae.name] = None
-            #register for callback with other AE
-            ae.callbacks.append(self.receive_data_from)
+            if (sender.__class__ == self.__class__):
+                # the sender is another autoencoder
+                sender.callbacks.append(self.receive_data_from)
+                self.input_buffer[sender] = None
+                log.debug(self.name + " registered for input from " + sender.name)
 
-    # register for data from an input layer
-    def register_for_inputlayer(self, inputlayer, region):
-        if (self.iteration > 0):
-            #TODO: allow this at some point
-            log.warning("Can't register for new data, already run!")
-        else:
-            log.debug(self.name + " registering for input from an inputlayer")
-            inputlayer.register_callback(region, self.fit_transform)
+            elif (str(sender.__class__).find("InputLayer")):
+                # the sender is an input layer
+                sender.register_callback(region, self.receive_data_from)
+                self.input_buffer[sender] = None
+                log.debug(self.name + " registered for input from " + sender.name)
+
+            else:
+                log.warning("Can't register for new data, unknown sender.")
 
     # receive data from other autoencoder or input layer and store in buffer
-    def receive_data_from(self, from_name, data):
-        if not from_name in self.input_buffer:
-            log.warning(self.name + " can't receive data from "+from_name+", it's not registered.")
+    def receive_data_from(self, sender, data):
+        if not sender in self.input_buffer:
+            log.warning(self.name + " can't receive data from "+sender.name+", it's not registered.")
             return
         #check if buffer is full:
-        if (isinstance(self.input_buffer[from_name], np.ndarray)):
-            log.warning(self.name + " can't receive data from "+from_name+", buffer full- still waiting for the other AEs")
+        if (isinstance(self.input_buffer[sender], np.ndarray)):
+            log.warning(self.name + " can't receive data from "+sender.name+", buffer full- still waiting for the other AEs")
             return
 
         ##all set!
-        log.debug("succesfully received data from " + from_name)
-        self.input_buffer[from_name] = data
+        log.debug("succesfully received data from " + sender.name)
+        self.input_buffer[sender] = data
         self.check_input_buffer()
 
     # check if input_buffer is full and if yes, execute transform and trigger our callbacks.
@@ -300,34 +304,17 @@ class StackedAutoEncoder:
     def emit_callbacks(self, data):
         # trigger registered callbacks
         for callback in self.callbacks:
-            callback(self.name, data)
+            callback(self, data)
 
 
+    def max_activation_recursive(self):
+        pass
+        #if input_buffer contains only input layers, return max_activation
 
-
-    # save parameters to disk using tf.train.Saver
-    def save_parameters(self):
-        sess = self.session
-
-        to_be_saved = {}
-
-        for layer in xrange(self.depth):
-            to_be_saved['layer'+str(layer)+'_encode_weights'] = self.layers[layer]['encode_weights']
-            to_be_saved['layer'+str(layer)+'_encode_biases'] = self.layers[layer]['encode_biases']
-            to_be_saved['layer'+str(layer)+'_decode_biases'] = self.layers[layer]['decode_biases']
-
-        saver = tf.train.Saver(to_be_saved)
-        saver.save(sess, SummaryWriter().get_output_folder('checkpoints')+"/"+self.name+"_"+str(self.iteration))
-
-        log.info("💾 model saved.")
-
-    def load_parameters(self, filename):
-        raise NotImplementedError()
-        #TODO
-        #self.saver.restore(sess, ....)
-        #log.info("💾✅ model restored.")
-
-
+        #1 calculate max_activation summary (hidden x input_dim matrix)
+            #2 for each input_dim matrix split it up according to input_buffer (dim of inputlayer regions...?)
+                #3 for each input_buffer ask for max_activation object
+                # multiply
 
 
 
@@ -410,6 +397,36 @@ class StackedAutoEncoder:
         SummaryWriter().writer.flush()
 
         log.info("📈 transformed input image plotted.")
+
+
+
+
+
+
+
+    # save parameters to disk using tf.train.Saver
+    def save_parameters(self):
+        sess = self.session
+
+        to_be_saved = {}
+
+        for layer in xrange(self.depth):
+            to_be_saved['layer'+str(layer)+'_encode_weights'] = self.layers[layer]['encode_weights']
+            to_be_saved['layer'+str(layer)+'_encode_biases'] = self.layers[layer]['encode_biases']
+            to_be_saved['layer'+str(layer)+'_decode_biases'] = self.layers[layer]['decode_biases']
+
+        saver = tf.train.Saver(to_be_saved)
+        saver.save(sess, SummaryWriter().get_output_folder('checkpoints')+"/"+self.name+"_"+str(self.iteration))
+
+        log.info("💾 model saved.")
+
+    def load_parameters(self, filename):
+        raise NotImplementedError()
+        #TODO
+        #self.saver.restore(sess, ....)
+        #log.info("💾✅ model restored.")
+
+
 
 
 

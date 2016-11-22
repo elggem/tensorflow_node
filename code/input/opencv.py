@@ -51,5 +51,5 @@ class OpenCVInputLayer(InputLayer):
             batch.append(roi)
             
             if (len(batch) >= self.batch_size):
-                callback(np.array(batch))
+                callback(self, np.array(batch))
                 batch[:] = []
