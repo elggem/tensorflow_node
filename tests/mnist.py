@@ -12,9 +12,8 @@ model = StackedAutoEncoder(
         dims=[100],
         encoding_activations=['linear'], 
         epoch=[150],
-        noise='mask-0.5', 
+        noise='gaussian', 
         loss='rmse',
-        tied_weights=True,
         lr=0.007
     )
 

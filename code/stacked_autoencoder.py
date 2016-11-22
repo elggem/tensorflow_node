@@ -21,7 +21,7 @@ class StackedAutoEncoder:
 
 
 
-    def __init__(self, dims, encoding_activations, decoding_activations=None, name='ae', epoch=100, noise=None, loss='rmse', lr=0.001, metadata=False, timeline=False, tied_weights=True):
+    def __init__(self, dims, encoding_activations, decoding_activations=None, name='ae', epoch=100, noise=None, loss='rmse', lr=0.001, metadata=False, timeline=False):
         # object initialization
         self.name = name+'-%08x' % random.getrandbits(32)
         self.session = tf.Session()
@@ -39,7 +39,6 @@ class StackedAutoEncoder:
         self.noise = noise
         self.epoch = epoch
         self.dims = dims
-        self.tied_weights = tied_weights
         self.metadata = metadata # collect metadata information
         self.timeline = timeline # collect timeline information
         self.assertions()
@@ -185,12 +184,7 @@ class StackedAutoEncoder:
                 with tf.variable_scope(self.name):
                     with tf.variable_scope("layer_"+str(layer)):
                         encode_weights = tf.get_variable("encode_weights", (input_dim, hidden_dim), initializer=tf.random_normal_initializer())
-
-                        if (self.tied_weights):
-                            decode_weights = tf.transpose(encode_weights)
-                        else:
-                            decode_weights = tf.get_variable("decode_weights", (hidden_dim, input_dim), initializer=tf.random_normal_initializer())
-
+                        decode_weights = tf.transpose(encode_weights)
                         encode_biases = tf.get_variable("encode_biases", (hidden_dim), initializer=tf.random_normal_initializer())
                         decode_biases = tf.get_variable("decode_biases", (input_dim), initializer=tf.random_normal_initializer())
 
@@ -232,7 +226,6 @@ class StackedAutoEncoder:
         
                 # initalize accessor variables
                 self.layers[layer]['encode_weights'] = encode_weights
-                self.layers[layer]['decode_weights'] = decode_weights
                 self.layers[layer]['encode_biases'] = encode_biases
                 self.layers[layer]['decode_biases'] = decode_biases
 
