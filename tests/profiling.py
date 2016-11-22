@@ -10,7 +10,7 @@ log.info("recording summaries to " + SummaryWriter().get_summary_folder())
 
 model = StackedAutoEncoder(
         dims=[100],
-        activations=['linear'], 
+        encoding_activations=['linear'], 
         noise='gaussian', 
         epoch=[100],
         loss='rmse',

@@ -21,7 +21,7 @@ class StackedAutoEncoder:
 
 
 
-    def __init__(self, dims, activations, name='ae', epoch=100, noise=None, loss='rmse', lr=0.001, metadata=False, timeline=False):
+    def __init__(self, dims, encoding_activations, decoding_activations=None, name='ae', epoch=100, noise=None, loss='rmse', lr=0.001, metadata=False, timeline=False, tied_weights=True):
         # object initialization
         self.name = name+'-%08x' % random.getrandbits(32)
         self.session = tf.Session()
@@ -30,10 +30,16 @@ class StackedAutoEncoder:
         # parameters
         self.lr = lr
         self.loss = loss
-        self.activations = activations
+        self.encoding_activations = encoding_activations
+        # initialize activations symmetric if they are not given.
+        if (decoding_activations == None):
+            self.decoding_activations = encoding_activations
+        else:
+            self.decoding_activations = decoding_activations
         self.noise = noise
         self.epoch = epoch
         self.dims = dims
+        self.tied_weights = tied_weights
         self.metadata = metadata # collect metadata information
         self.timeline = timeline # collect timeline information
         self.assertions()
@@ -87,7 +93,8 @@ class StackedAutoEncoder:
                 self.init_run(input_dim=len(x[0]),
                               layer=i,
                               hidden_dim=self.dims[i], 
-                              activation=self.activations[i], 
+                              encoding_activation=self.encoding_activations[i], 
+                              decoding_activation=self.decoding_activations[i], 
                               loss=self.loss, 
                               lr=self.lr)
 
@@ -109,7 +116,7 @@ class StackedAutoEncoder:
         with tf.name_scope(self.scope):
             with tf.name_scope(self.transform_scope):
                 x = tf.constant(data, dtype=tf.float32)
-                for layer, a in zip(self.layers, self.activations):
+                for layer, a in zip(self.layers, self.encoding_activations):
                     layer = tf.matmul(x, layer['encode_weights']) + layer['encode_biases']
                     x = self.activate(layer, a)
         
@@ -160,7 +167,7 @@ class StackedAutoEncoder:
 
 
     # initialize variables according to params and input data for given layer.
-    def init_run(self, input_dim, hidden_dim, activation, loss, lr, layer):
+    def init_run(self, input_dim, hidden_dim, encoding_activation, decoding_activation, loss, lr, layer):
         sess = self.session
 
         # store all variables, so that we can later determinate what new variables there are
@@ -178,24 +185,21 @@ class StackedAutoEncoder:
                 with tf.variable_scope(self.name):
                     with tf.variable_scope("layer_"+str(layer)):
                         encode_weights = tf.get_variable("encode_weights", (input_dim, hidden_dim), initializer=tf.random_normal_initializer())
-                        decode_weights = tf.transpose(encode_weights) ## AE is symmetric (tied variables), thus no seperate decoder weights.
+
+                        if (self.tied_weights):
+                            decode_weights = tf.transpose(encode_weights)
+                        else:
+                            decode_weights = tf.get_variable("decode_weights", (hidden_dim, input_dim), initializer=tf.random_normal_initializer())
+
                         encode_biases = tf.get_variable("encode_biases", (hidden_dim), initializer=tf.random_normal_initializer())
                         decode_biases = tf.get_variable("decode_biases", (input_dim), initializer=tf.random_normal_initializer())
 
                 with tf.name_scope("encoded"):
-                    encoded = self.activate(tf.matmul(x, encode_weights) + encode_biases, activation)
+                    encoded = self.activate(tf.matmul(x, encode_weights) + encode_biases, encoding_activation, label="encoded")
 
                 with tf.name_scope("decoded"):
-                    decoded = self.activate(tf.matmul(encoded, decode_weights) + decode_biases, activation)
-                    ############CHECK if this works with RMSE!
+                    decoded = self.activate(tf.matmul(encoded, decode_weights) + decode_biases, decoding_activation, label="decoded")
 
-                    ## this might be why cross-entropy doesnt work, see below:
-
-                    """
-                    an affine+sigmoid encoder and either affine decoder with squared error 
-                    loss or affine+sigmoid decoder with cross-entropy loss. from Vincent et al. 10
-                    """
-                
                 with tf.name_scope("loss"):
                     # reconstruction loss
                     if loss == 'rmse':
@@ -228,6 +232,7 @@ class StackedAutoEncoder:
         
                 # initalize accessor variables
                 self.layers[layer]['encode_weights'] = encode_weights
+                self.layers[layer]['decode_weights'] = decode_weights
                 self.layers[layer]['encode_biases'] = encode_biases
                 self.layers[layer]['decode_biases'] = decode_biases
 
@@ -427,17 +432,17 @@ class StackedAutoEncoder:
             pass
 
     # different activation functions
-    def activate(self, linear, name):
+    def activate(self, linear, name, label='encoded'):
         if name == 'sigmoid':
-            return tf.nn.sigmoid(linear, name='encoded')
+            return tf.nn.sigmoid(linear, name=label)
         elif name == 'softmax':
-            return tf.nn.softmax(linear, name='encoded')
+            return tf.nn.softmax(linear, name=label)
         elif name == 'linear':
             return linear
         elif name == 'tanh':
-            return tf.nn.tanh(linear, name='encoded')
+            return tf.nn.tanh(linear, name=label)
         elif name == 'relu':
-            return tf.nn.relu(linear, name='encoded')
+            return tf.nn.relu(linear, name=label)
 
 
 
@@ -451,13 +456,13 @@ class StackedAutoEncoder:
             type(self.dims)), 'dims must be a list even if there is one layer.'
         assert len(self.epoch) == len(
             self.dims), "No. of epochs must equal to no. of hidden layers"
-        assert len(self.activations) == len(
-            self.dims), "No. of activations must equal to no. of hidden layers"
+        #assert len(self.activations) == len(
+        #    self.dims), "No. of activations must equal to no. of hidden layers"
         assert all(
             True if x > 0 else False
             for x in self.epoch), "No. of epoch must be atleast 1"
-        assert set(self.activations + allowed_activations) == set(
-            allowed_activations), "Incorrect activation given."
+        #assert set(self.activations + allowed_activations) == set(
+        #    allowed_activations), "Incorrect activation given."
         assert self.noise_validator(
             self.noise, allowed_noises), "Incorrect noise given"
 

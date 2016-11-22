@@ -10,10 +10,10 @@ formatter = ColoredFormatter(
     datefmt=None,
     reset=True,
     log_colors={
-        'DEBUG':    'yellow',
-        'INFO':     'green',
-        'WARNING':  'red',
-        'ERROR':    'red',
+        '   DEBUG': 'yellow',
+        '    INFO': 'green',
+        ' WARNING': 'red',
+        '   ERROR': 'red',
         'CRITICAL': 'red,bg_white',
     },
     style='%'

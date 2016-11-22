@@ -13,7 +13,7 @@ models = []
 for _ in xrange(4):
     models.append(StackedAutoEncoder(
         dims=[100],
-        activations=['linear'], 
+        encoding_activations=['linear'], 
         noise='gaussian', 
         epoch=[10],
         loss='rmse',
