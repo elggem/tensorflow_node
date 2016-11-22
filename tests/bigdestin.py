@@ -99,5 +99,14 @@ model_middle_cd.register_for_ae(model_input_d)
 model_top.register_for_ae(model_middle_ab)
 model_top.register_for_ae(model_middle_cd)
 
-inputlayer.feed_video("data/hand.m4v", repeat=10)
+inputlayer.feed_video("data/hand.m4v", repeat=50)
+
+model_input_a.transformed_summary()
+model_input_b.transformed_summary()
+model_input_c.transformed_summary()
+model_input_d.transformed_summary()
+model_middle_ab.transformed_summary()
+model_middle_cd.transformed_summary()
+model_top.transformed_summary()
+
 

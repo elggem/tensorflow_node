@@ -178,7 +178,7 @@ class StackedAutoEncoder:
                 with tf.variable_scope(self.name):
                     with tf.variable_scope("layer_"+str(layer)):
                         encode_weights = tf.get_variable("encode_weights", (input_dim, hidden_dim), initializer=tf.random_normal_initializer())
-                        decode_weights = tf.transpose(encode_weights) ## AE is symmetric (bound variables), thus no seperate decoder weights.
+                        decode_weights = tf.transpose(encode_weights) ## AE is symmetric (tied variables), thus no seperate decoder weights.
                         encode_biases = tf.get_variable("encode_biases", (hidden_dim), initializer=tf.random_normal_initializer())
                         decode_biases = tf.get_variable("decode_biases", (input_dim), initializer=tf.random_normal_initializer())
 
@@ -194,6 +194,7 @@ class StackedAutoEncoder:
                         loss = tf.sqrt(tf.reduce_mean(tf.square(tf.sub(x_, decoded))))
                     elif loss == 'cross-entropy':
                         loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(decoded, x_))  ### TODO this is not working in it's current form! why?
+                        #loss = -tf.reduce_mean(x_ * tf.log(decoded))
                     # record loss
                 
                 with tf.name_scope("train"):
