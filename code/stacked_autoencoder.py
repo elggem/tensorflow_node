@@ -4,6 +4,7 @@ import numpy as np
 import random
 import tensorflow as tf
 from tensorflow.python.client import timeline
+from collections import OrderedDict
 
 from utils import SummaryWriter
 from utils.logger import log
@@ -54,6 +55,7 @@ class StackedAutoEncoder:
         # layer variables and ops
         self.depth = len(dims)
         self.layers = []
+        self.transform_op = None
         for i in xrange(self.depth):
             self.layers.append({'encode_weights': None, 
                                 'encode_biases': None, 
@@ -65,7 +67,7 @@ class StackedAutoEncoder:
 
         # callback to other autoencoders, triggered when transform called.
         self.callbacks = []
-        self.input_buffer = {}
+        self.input_buffer = OrderedDict()
 
 
         log.info("👌 Autoencoder initalized " + self.name)
@@ -74,7 +76,8 @@ class StackedAutoEncoder:
         self.session.close()
         log.info("🖐 Autoencoder " + self.name + " deallocated, closed session.")
 
-
+    def __str__(self):
+        return self.name
 
 
     # fit given data and return transformed
@@ -89,15 +92,15 @@ class StackedAutoEncoder:
         self.iteration += 1
 
         # DEBUG: plot every 10 iterations.
-        if (self.iteration % 10 == 1):
-            self.max_activation_summary()
+        #if (self.iteration % 10 == 1):
+        #    self.max_activation_summary()
 
         for i in range(self.depth):
             log.info(self.name + ' layer {0}'.format(i + 1)+' iteration {0}'.format(self.iteration))
 
             #if this is the first iteration initialize the graph
             if (self.iteration == 1):
-                self.init_run(input_dim=len(x[0]),
+                self.init_layer(input_dim=len(x[0]),
                               layer=i,
                               hidden_dim=self.dims[i], 
                               encoding_activation=self.encoding_activations[i], 
@@ -106,36 +109,54 @@ class StackedAutoEncoder:
                               lr=self.lr)
 
             if self.noise is None:
-                x = self.run(data_x=x, 
+                x = self.fit_layer(data_x=x, 
                              data_x_=x,
                              layer=i,
                              epoch=self.epoch[i])
             else:
                 temp = np.copy(x)
-                x = self.run(data_x=self.add_noise(temp),
+                x = self.fit_layer(data_x=self.add_noise(temp),
                              data_x_=x,
                              layer=i,
                              epoch=self.epoch[i])
 
     def transform(self, data):
+        if (self.transform_op == None):
+            self.init_transform(data)
+
         sess = self.session
 
-        with tf.name_scope(self.scope):
-            with tf.name_scope(self.transform_scope):
-                x = tf.constant(data, dtype=tf.float32)
-                for layer, a in zip(self.layers, self.encoding_activations):
-                    layer = tf.matmul(x, layer['encode_weights']) + layer['encode_biases']
-                    x = self.activate(layer, a)
-        
-        # make the calculation
-        transformed = x.eval(session=sess)
+        feeding_scope = self.name+"/transform/"
+        feed_dict = {feeding_scope+'input:0':  data}
+        #execute transform op
+        transformed = sess.run(self.transform_op, feed_dict=feed_dict)
+
+
         self.last_activation = transformed
         self.emit_callbacks(transformed)
 
         return transformed
 
+    def init_transform(self, data):
+        log.debug("Init transform...")
+        sess = self.session
+
+        with tf.name_scope(self.scope):
+            with tf.name_scope(self.transform_scope):
+                x = tf.placeholder(dtype=tf.float32, shape=data.shape, name='input')
+
+                for layer, a in zip(self.layers, self.encoding_activations):
+                    layer = tf.matmul(x, layer['encode_weights']) + layer['encode_biases']
+                    x = self.activate(layer, a)
+        
+        SummaryWriter().writer.add_graph(sess.graph)
+
+        # store_op
+        self.transform_op = x
+
+
     # main run call to fit data for given layer
-    def run(self, data_x, data_x_, layer, epoch):
+    def fit_layer(self, data_x, data_x_, layer, epoch):
         sess = self.session
 
         if self.metadata:
@@ -174,7 +195,7 @@ class StackedAutoEncoder:
 
 
     # initialize variables according to params and input data for given layer.
-    def init_run(self, input_dim, hidden_dim, encoding_activation, decoding_activation, loss, lr, layer):
+    def init_layer(self, input_dim, hidden_dim, encoding_activation, decoding_activation, loss, lr, layer):
         sess = self.session
 
         # store all variables, so that we can later determinate what new variables there are
@@ -286,7 +307,7 @@ class StackedAutoEncoder:
     # check if input_buffer is full and if yes, execute transform and trigger our callbacks.
     def check_input_buffer(self):
         # check if all buffers are valid arrays.
-        if all(isinstance(item, np.ndarray) for item in self.input_buffer.values()):
+        if all(isinstance(item, np.ndarray) for item in self.input_buffer.values()): ## how much time does this take?!
             log.debug("input buffer complete, executing fit_transform and triggering callbacks...")
 
             # concatenate data and execute fit_transform
@@ -308,19 +329,50 @@ class StackedAutoEncoder:
 
 
     def max_activation_recursive(self):
-        pass
-        #if input_buffer contains only input layers, return max_activation
+        ## refactor make this work without loops.
+        recursive_activations = []
 
-        #1 calculate max_activation summary (hidden x input_dim matrix)
-            #2 for each input_dim matrix split it up according to input_buffer (dim of inputlayer regions...?)
-                #3 for each input_buffer ask for max_activation object
-                # multiply
+        i = 0
+        #1 calculate max_activation (hidden x input_dim matrix)
+        for max_activation in self.max_activation():
+            #log.critical("looking at hidden neuron " + str(i))
+            i += 1
+            #2 for each input_dim matrix split it up according to input_buffer (AE: sender.ndims[-1] - inputlayer: sender.dims_for_receiver(self))
+            dimcounter = 0
+            activation = []
 
+            for sender in self.input_buffer:
+                #log.critical("   looking at " + sender.name)
+                if (sender.__class__ == self.__class__):
+                    ndims = sender.dims[-1]
+                    sender_activation = max_activation[dimcounter:dimcounter+ndims]
+                    log.critical("Got slice " + str(dimcounter) +" to " + str(dimcounter+ndims) + " from max_activation.")
+                    dimcounter += ndims
+                    #3 for each input_buffer that is AE ask for max_activation object and multiply
+                    sender_max_activations = sender.max_activation_recursive()
+                    #sender activation = |hl| and sender_max_activations = hl x input
+                    A = np.array(sender_activation)
+                    B = np.array(sender_max_activations)
+                    C = (A[:, np.newaxis] * B).sum(axis=0)
+                    activation.append(C)
 
+                elif (str(sender.__class__).find("InputLayer")):
+                    ndims = sender.dims_for_receiver(self)
+                    sender_activation = max_activation[dimcounter:dimcounter+ndims]
+                    dimcounter += ndims
+                    #4 for each input_buffer that is input_layer return it
+                    activation.append(sender_activation)
+            
+            recursive_activations.append(np.concatenate(activation))
+
+        recursive_activations = np.array(recursive_activations)
+        print recursive_activations.shape
+
+        return recursive_activations
 
     # visualization of maximum activation for all hidden neurons on layer 0
     # according to: http://deeplearning.stanford.edu/wiki/index.php/Visualizing_a_Trained_Autoencoder)
-    def max_activation_summary(self):
+    def max_activation(self):
         sess = self.session
 
         #layer 0 not initialized.
@@ -329,22 +381,11 @@ class StackedAutoEncoder:
 
         W = self.layers[0]['encode_weights'].eval(session=sess)
 
-        input_wh = int(np.ceil(np.power(W.shape[0],0.5)))
-        input_shape = [input_wh, input_wh]
-
-        ## note we floor the number of plotted outputs here, 
-        # so we always plot an even number instead of padding.
-        output_wh = int(np.floor(np.power(W.shape[1],0.5)))
-        output_shape = [input_wh*output_wh, input_wh*output_wh]
-        
         outputs = []
-        output_rows = []
-
-        activation_image = np.zeros(output_shape, dtype=np.float32)
 
         #calculate for each hidden neuron
         for i in xrange(W.shape[1]):
-            output = np.array(np.zeros(input_wh*input_wh),dtype='float32')
+            output = np.array(np.zeros(W.shape[0]),dtype='float32')
         
             W_ij_sum = 0
 
@@ -355,10 +396,73 @@ class StackedAutoEncoder:
                 W_ij = W[j][i]
                 output[j] = (W_ij)/(np.sqrt(W_ij_sum))
 
-            outputs.append(output.reshape(input_shape))
+            outputs.append(output)
+
+        return outputs
+
+
+    def max_activation_recursive_summary(self):
+        # TODO: this is horrible, but it works. :)
+        sess = self.session
+
+        outputs = np.array(self.max_activation_recursive()) ## needs to be reshaped.
+        shaped_outputs = []
+
+        input_wh = int(np.ceil(np.power(outputs.shape[1],0.5)))
+        input_shape = [input_wh, input_wh]
+
+        for output in outputs:
+            #output 0-40, 40-80, 80-120, 120-160
+            A = np.concatenate([output[:196].reshape([14,14]), output[196:392].reshape([14,14])], axis=0) ### TODO: this is hardcoded.
+            B = np.concatenate([output[392:588].reshape([14,14]), output[588:784].reshape([14,14])], axis=0)
+            shaped_outputs.append(np.concatenate([A,B], axis=1))
+
+        output_wh = int(np.floor(np.power(outputs.shape[0],0.5)))
+        output_shape = [input_wh*output_wh, input_wh*output_wh]
+        output_rows = []
+        
+        activation_image = np.zeros(output_shape, dtype=np.float32)
+
+        print output_shape
 
         for i in xrange(output_wh):
-            output_rows.append(np.concatenate(outputs[i*output_wh:(i*output_wh)+output_wh], 0))
+            output_rows.append(np.concatenate(shaped_outputs[i*output_wh:(i*output_wh)+output_wh], 0))
+
+        activation_image = np.concatenate(output_rows, 1)
+        
+        image_summary_op = tf.image_summary("max_activation_RECURSIVE_"+self.name, np.reshape(activation_image, (1, output_shape[0], output_shape[1], 1)))
+        image_summary_str = sess.run(image_summary_op)
+        
+        SummaryWriter().writer.add_summary(image_summary_str, self.iteration)
+        SummaryWriter().writer.flush()
+
+        log.info("📈 activation image plotted.")
+
+
+
+    def max_activation_summary(self):
+        # TODO: this is horrible, but it works. :)
+        sess = self.session
+
+        outputs = np.array(self.max_activation()) ## needs to be reshaped.
+        shaped_outputs = []
+
+        input_wh = int(np.ceil(np.power(outputs.shape[1],0.5)))
+        input_shape = [input_wh, input_wh]
+
+        for output in outputs:
+            shaped_outputs.append(output.reshape(input_shape))
+
+        output_wh = int(np.floor(np.power(outputs.shape[0],0.5)))
+        output_shape = [input_wh*output_wh, input_wh*output_wh]
+        output_rows = []
+        
+        activation_image = np.zeros(output_shape, dtype=np.float32)
+
+        print output_shape
+
+        for i in xrange(output_wh):
+            output_rows.append(np.concatenate(shaped_outputs[i*output_wh:(i*output_wh)+output_wh], 0))
 
         activation_image = np.concatenate(output_rows, 1)
         
@@ -372,6 +476,7 @@ class StackedAutoEncoder:
 
     # plot visualization of last activation batch to summary
     def transformed_summary(self):
+        # This, too is horrible but it works. 
         sess = self.session
 
         activation_wh = int(np.ceil(np.power(self.last_activation.shape[1],0.5)))

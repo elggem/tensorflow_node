@@ -30,7 +30,7 @@ class OpenCVInputLayer(InputLayer):
 
             res = cv2.resize(frame, self.output_size, interpolation = cv2.INTER_CUBIC)
             gray = cv2.cvtColor(res, cv2.COLOR_BGR2GRAY) #TODO: allow colour input.
-            self.process_frame(gray)
+            self.process_frame(gray * 1.0/255)
 
             if (framecount > 0):
                 framecount = framecount - 1
@@ -41,15 +41,19 @@ class OpenCVInputLayer(InputLayer):
             self.feed_video(filename, frames=frames, repeat=repeat-1)
 
     def process_frame(self, frame):
-        for region, callback, batch in self.callbacks:
+        self.batch.append(frame)
+        if (len(self.batch) >= self.batch_size):
+            self.emit_callbacks()
+
+    def emit_callbacks(self):
+        frame_batch = np.array(self.batch)
+
+        for region, callback in self.callbacks:
             x = region[0]
             y = region[1]
             w = region[2]
             h = region[3]
-            roi = frame[y:y + h, x:x + w].flatten()/255.0
 
-            batch.append(roi)
-            
-            if (len(batch) >= self.batch_size):
-                callback(self, np.array(batch))
-                batch[:] = []
+            callback(self, frame_batch[:, y:y + h, x:x + w].reshape((-1,w*h)))
+
+        self.batch = []

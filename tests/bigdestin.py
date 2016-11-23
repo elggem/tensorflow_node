@@ -84,20 +84,21 @@ inputlayer = OpenCVInputLayer(output_size=(28,28), batch_size=250)
 
 
 #connect a-d to corners of input, no stride
-model_input_a.register_for_inputlayer(inputlayer, [00,00,14,14])
-model_input_b.register_for_inputlayer(inputlayer, [14,00,14,14])
-model_input_c.register_for_inputlayer(inputlayer, [00,14,14,14])
-model_input_d.register_for_inputlayer(inputlayer, [14,14,14,14])
+model_input_a.register_for(inputlayer, [00,00,14,14])
+model_input_b.register_for(inputlayer, [14,00,14,14])
+model_input_c.register_for(inputlayer, [00,14,14,14])
+model_input_d.register_for(inputlayer, [14,14,14,14])
 
 #connect middle layers to input layers
-model_middle_ab.register_for_ae(model_input_a)
-model_middle_ab.register_for_ae(model_input_b)
-model_middle_cd.register_for_ae(model_input_c)
-model_middle_cd.register_for_ae(model_input_d)
+model_middle_ab.register_for(model_input_a)
+model_middle_ab.register_for(model_input_b)
+model_middle_cd.register_for(model_input_c)
+model_middle_cd.register_for(model_input_d)
 
 #connect middle layers to top layer
-model_top.register_for_ae(model_middle_ab)
-model_top.register_for_ae(model_middle_cd)
+model_top.register_for(model_middle_ab)
+model_top.register_for(model_middle_cd)
 
-inputlayer.feed_video("data/hand.m4v", repeat=10)
+inputlayer.feed_video("data/hand.m4v")
 
+model_top.max_activation_recursive()
