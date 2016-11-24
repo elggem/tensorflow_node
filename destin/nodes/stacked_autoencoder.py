@@ -3,11 +3,12 @@
 import numpy as np
 import random
 import tensorflow as tf
+import logging as log
+
 from tensorflow.python.client import timeline
 from collections import OrderedDict
 
-from utils import SummaryWriter
-from utils.logger import log
+from destin import SummaryWriter
 
 allowed_activations = ['sigmoid', 'tanh', 'softmax', 'relu', 'linear']
 allowed_noises = [None, 'gaussian', 'mask']

@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-import sys
-sys.path.append("./code")
-from utils.logger import log
 import random
+import sys
+import logging as log
 
 class InputLayer:
     """

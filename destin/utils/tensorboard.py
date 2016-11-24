@@ -6,7 +6,7 @@ import subprocess
 import sys
 
 from tensorflow import tensorboard as tb
-from summary_writer import SummaryWriter
+from destin import SummaryWriter
 
 _tb_pid_file = SummaryWriter().get_output_folder(".tbpid")
 _tb_path = os.path.join(os.path.dirname(tb.__file__), 'tensorboard.py')

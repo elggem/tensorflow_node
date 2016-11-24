@@ -4,7 +4,7 @@ import numpy as np
 import cv2
 import os.path
 
-from . import InputLayer
+from destin.input import InputLayer
 
 class OpenCVInputLayer(InputLayer):
     """

@@ -4,8 +4,7 @@ import os
 import datetime
 import tensorflow as tf
 from os.path import join as pjoin
-from logger import log
-import logging
+import logging as log
 
 # Singleton
 class SummaryWriter(object):
@@ -23,7 +22,7 @@ class SummaryWriter(object):
             self.writer = tf.train.SummaryWriter(self.directory)
 
             # log to file
-            log.addHandler(logging.FileHandler(self.directory+"/log", mode='a'))
+            log.getLogger().addHandler(logging.FileHandler(self.directory+"/log", mode='a'))
 
     def get_output_folder(self, path):
       output_path = pjoin(os.getcwd(), 'output', path)
