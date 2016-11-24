@@ -12,10 +12,10 @@ class OpenCVInputLayer(InputLayer):
     Contains OpenCV to feed in images and video feeds to TF.
     """
 
-    def feed_webcam(self, tensor, frames=-1):
-        self.feed_video(tensor, filename=0, frames=frames)
+    def feed_webcam(self, feed_callback, frames=-1):
+        self.feed_video(feed_callback, filename=0, frames=frames)
 
-    def feed_video(self, tensor, filename, frames=-1, repeat=0):
+    def feed_video(self, feed_callback, filename, frames=-1, repeat=0):
         if not os.path.isfile(filename) or filename == 0:
             raise IOError("OpenCVLayer - video file not found!")
 
@@ -33,10 +33,15 @@ class OpenCVInputLayer(InputLayer):
             gray = cv2.cvtColor(res, cv2.COLOR_BGR2GRAY) #TODO: allow colour input.
             gray = gray * 1.0/255
 
-            #use gray
-            tensor.eval(feed_dict=self.get_feed_dict_for_image(gray))
+            #use grayscale image
+            self.batch.append(gray.reshape([self.output_size[0],self.output_size[1],1]))
 
-            log.debug("📸 Evaluated frame %d" % framecount)
+            # batch is full
+            if len(self.batch) >= self.batch_size:
+                feed_dict = {self.name+'/input:0': np.array(self.batch)}
+                feed_callback(feed_dict)
+                self.batch = []
+                log.debug("📸 Evaluated frame %d" % framecount)
 
             if (framecount > 0):
                 framecount -= 1
@@ -44,5 +49,5 @@ class OpenCVInputLayer(InputLayer):
         cap.release()
 
         if (repeat!=0):
-            self.feed_video(filename, frames=frames, repeat=repeat-1)
+            self.feed_video(feed_callback, filename, frames=frames, repeat=repeat-1)
 

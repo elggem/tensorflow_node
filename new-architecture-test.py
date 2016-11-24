@@ -30,15 +30,35 @@ with tf.Session() as sess:
             name="top"
         )
 
-    inputlayer = OpenCVInputLayer(output_size=(28,28))
+    inputlayer = OpenCVInputLayer(output_size=(28,28), batch_size=100)
     
     ae_bottom_a.register_tensor(inputlayer.get_tensor_for_region([0,0,28,28]))
     ae_bottom_b.register_tensor(inputlayer.get_tensor_for_region([0,0,28,28]))
 
-    ae_top.register_tensor(ae_bottom_a.output())
-    ae_top.register_tensor(ae_bottom_b.output())
+    ae_top.register_tensor(ae_bottom_a.get_output_tensor())
+    ae_top.register_tensor(ae_bottom_b.get_output_tensor())
+    ae_top.initialize_graph()
 
-    inputlayer.feed_video(ae_top.output(), "data/mnist.mp4", frames=1000)
+    merged_summary_op = tf.merge_all_summaries()          
+
+    iteration = 0
+
+    def feed_callback(feed_dict):
+        global iteration
+        iteration += 1
+        
+        sess.run([ae_bottom_a.train_op, ae_bottom_b.train_op, ae_top.train_op], feed_dict=feed_dict)
+
+        #summary_str = merged_summary_op.eval(feed_dict=feed_dict)
+        #SummaryWriter().writer.add_summary(summary_str, iteration)
+        #SummaryWriter().writer.flush()
+
+
+        
+
+
+
+    inputlayer.feed_video(feed_callback, "data/mnist.mp4", frames=20000)
 
 
     # initialize summary writer with graph 

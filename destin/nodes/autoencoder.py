@@ -11,6 +11,8 @@ import random
 import logging as log
 import tensorflow as tf
 
+from destin import SummaryWriter
+
 class AutoEncoderNode(object):
     __metaclass__ = abc.ABCMeta
 
@@ -28,8 +30,12 @@ class AutoEncoderNode(object):
 
         self.name = name+'-%08x' % random.getrandbits(32)
         self.session=session
+
+        # this list is populated 
         self.input_tensors=[]
+        # these are initialized upon first call to output_tensor
         self.output_tensor=None
+        self.train_op=None
 
         # set parameters (Move those to init function params?)
         self.iteration = 0
@@ -48,11 +54,13 @@ class AutoEncoderNode(object):
 
         return
 
-    def output(self):
-        # if already initalized, return our exisiting tensor
-        if self.output_tensor != None:
-            return self.output_tensor
+    def get_output_tensor(self):
+        if self.output_tensor == None:
+            self.initialize_graph()
 
+        return self.output_tensor
+
+    def initialize_graph(self):
         log.debug(self.name+ " initializing output tensor...")
 
         # store all variables, so that we can later determinate what new variables there are
@@ -94,27 +102,21 @@ class AutoEncoderNode(object):
             with tf.name_scope("train"):
                 train_op = tf.train.AdamOptimizer(self.lr).minimize(loss)
 
-            # Add summary ops to collect data
-            summary_key = self.name
-
-            tf.scalar_summary(self.name+"_loss", loss, collections=[summary_key])
-            tf.histogram_summary(self.name+"_encode_weights", encode_weights, collections=[summary_key])
-            tf.histogram_summary(self.name+"_encode_biases",  encode_biases,  collections=[summary_key])
-            tf.histogram_summary(self.name+"_decode_weights", decode_weights, collections=[summary_key])
-            tf.histogram_summary(self.name+"_decode_biases",  decode_biases,  collections=[summary_key])
-            
-            # Merge all summaries into a single operator
-            merged_summary_op = tf.merge_all_summaries(key=summary_key)             
+            tf.scalar_summary(self.name+"_loss", loss)
+            tf.histogram_summary(self.name+"_encode_weights", encode_weights)
+            tf.histogram_summary(self.name+"_encode_biases",  encode_biases)
+            tf.histogram_summary(self.name+"_decode_weights", decode_weights)
+            tf.histogram_summary(self.name+"_decode_biases",  decode_biases)               
 
             # initalize all new variables
             self.session.run(tf.initialize_variables(set(tf.all_variables()) - temp))
-
-            self.summary_op = merged_summary_op
         
-            with self.session.graph.control_dependencies([encoded, train_op]):
-                self.output_tensor = tf.identity(encoded, name="output_tensor")
+            #with self.session.graph.control_dependencies([encoded, train_op]):
+            #    self.output_tensor = tf.identity(encoded, name="output_tensor")
+            self.train_op = train_op
+            self.output_tensor = encoded
 
-        return self.output_tensor
+        return
 
 
     # noise for denoising AE.
@@ -145,7 +147,12 @@ class AutoEncoderNode(object):
 
     # I/O
     def register_tensor(self, new_tensor):
+        #TODO: check if graph is initialized and modify for new input_dim
         self.input_tensors.append(new_tensor)
+        return
+
+    def deregister_tensor(self, tensor):
+        #TODO: check if graph is initialized and modify for new input_dim
         return
 
     # Persistence

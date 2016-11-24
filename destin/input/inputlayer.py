@@ -18,13 +18,15 @@ class InputLayer(object):
         #TODO make sure params are sane
         assert(42==42)
     
-    def __init__(self, output_size=(28,28)):
+    def __init__(self, batch_size=1, output_size=(28,28)):
         self.name = 'inputlayer-%08x' % random.getrandbits(32)
         self.output_size = output_size
+        self.batch_size = batch_size
+        self.batch = []
 
         with tf.name_scope(self.name) as n_scope:
             self.name_scope = n_scope
-            self.input_placeholder = tf.placeholder(dtype=tf.float32, shape=(output_size[0], output_size[1], 1), name='input')
+            self.input_placeholder = tf.placeholder(dtype=tf.float32, shape=(self.batch_size, output_size[0], output_size[1], 1), name='input')
 
         self.assertions()
         log.debug("📸 Input Layer initalized")
@@ -32,15 +34,10 @@ class InputLayer(object):
     def get_tensor_for_region(self, region):
         with tf.name_scope(self.name_scope):
             # crop params are vertical top left, horizontal top left, height, width
-            cropped = tf.image.crop_to_bounding_box(self.input_placeholder, region[1], region[0], region[3], region[2])
-            flattened = tf.reshape(cropped, [-1])
+            cropped = tf.map_fn(lambda img: tf.image.crop_to_bounding_box(img, region[1], region[0], region[3], region[2]), self.input_placeholder)
+            flattened = tf.reshape(cropped, [self.batch_size,-1])
 
         return flattened
-
-    def get_feed_dict_for_image(self, image):
-        return {self.name+'/input:0': image.reshape([28,28,1])}
-
-
 
 
 
