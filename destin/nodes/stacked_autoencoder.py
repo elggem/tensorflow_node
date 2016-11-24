@@ -9,12 +9,13 @@ from tensorflow.python.client import timeline
 from collections import OrderedDict
 
 from destin import SummaryWriter
+from destin.nodes import BaseNode
 
 allowed_activations = ['sigmoid', 'tanh', 'softmax', 'relu', 'linear']
 allowed_noises = [None, 'gaussian', 'mask']
 allowed_losses = ['rmse', 'cross-entropy']
 
-class StackedAutoEncoder:
+class StackedAutoEncoderNode(BaseNode):
     """
     A deep autoencoder with denoising capability
     based on https://github.com/rajarsheem/libsdae 

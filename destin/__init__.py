@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
 
+from utils import SummaryWriter
+
+from input import OpenCVInputLayer
+
+from nodes import AutoEncoderNode
+from nodes import StackedAutoEncoderNode
+
 import logging
 from colorlog import ColoredFormatter
 
@@ -26,11 +33,3 @@ stream.setFormatter(formatter)
 log = logging.getLogger()
 log.setLevel(LOG_LEVEL)
 log.addHandler(stream)
-
-from utils import SummaryWriter
-
-from input import OpenCVInputLayer
-
-from nodes import AutoEncoder
-from nodes import StackedAutoEncoder
-
