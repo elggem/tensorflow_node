@@ -3,6 +3,7 @@
 import numpy as np
 import cv2
 import os.path
+import logging as log
 
 from destin.input import InputLayer
 
@@ -34,6 +35,8 @@ class OpenCVInputLayer(InputLayer):
 
             #use gray
             tensor.eval(feed_dict=self.get_feed_dict_for_image(gray))
+
+            log.debug("📸 Evaluated frame %d" % framecount)
 
             if (framecount > 0):
                 framecount -= 1

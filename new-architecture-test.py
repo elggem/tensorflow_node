@@ -38,10 +38,7 @@ with tf.Session() as sess:
     ae_top.register_tensor(ae_bottom_a.output())
     ae_top.register_tensor(ae_bottom_b.output())
 
-    inputlayer.feed_video(ae_top.output(), "data/mnist.mp4")
-
-    #for i in xrange(100):
-    #    log.info(ae_top.output().eval(feed_dict=))
+    inputlayer.feed_video(ae_top.output(), "data/mnist.mp4", frames=1000)
 
 
     # initialize summary writer with graph 

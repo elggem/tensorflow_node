@@ -46,15 +46,14 @@ class AutoEncoderNode(object):
         with tf.name_scope(self.name) as scope:
             self.scope=scope
 
-        # do custom initialization of AE here:
-        #self.output_tensor = self.init_graph()
-
         return
 
     def output(self):
         # if already initalized, return our exisiting tensor
         if self.output_tensor != None:
             return self.output_tensor
+
+        log.debug(self.name+ " initializing output tensor...")
 
         # store all variables, so that we can later determinate what new variables there are
         temp = set(tf.all_variables())
@@ -96,21 +95,23 @@ class AutoEncoderNode(object):
                 train_op = tf.train.AdamOptimizer(self.lr).minimize(loss)
 
             # Add summary ops to collect data
-            summary_key = self.name;
+            summary_key = self.name
 
-            tf.histogram_summary(self.name+"_encode_weights", encode_weights, collections=[summary_key])
-            tf.histogram_summary(self.name+"_encode_biases", encode_biases, collections=[summary_key])
-            tf.histogram_summary(self.name+"_decode_weights", decode_weights, collections=[summary_key])
-            tf.histogram_summary(self.name+"_decode_biases", decode_biases, collections=[summary_key])
             tf.scalar_summary(self.name+"_loss", loss, collections=[summary_key])
+            tf.histogram_summary(self.name+"_encode_weights", encode_weights, collections=[summary_key])
+            tf.histogram_summary(self.name+"_encode_biases",  encode_biases,  collections=[summary_key])
+            tf.histogram_summary(self.name+"_decode_weights", decode_weights, collections=[summary_key])
+            tf.histogram_summary(self.name+"_decode_biases",  decode_biases,  collections=[summary_key])
             
             # Merge all summaries into a single operator
             merged_summary_op = tf.merge_all_summaries(key=summary_key)             
 
             # initalize all new variables
             self.session.run(tf.initialize_variables(set(tf.all_variables()) - temp))
+
+            self.summary_op = merged_summary_op
         
-            with self.session.graph.control_dependencies([encoded, train_op, merged_summary_op]):
+            with self.session.graph.control_dependencies([encoded, train_op]):
                 self.output_tensor = tf.identity(encoded, name="output_tensor")
 
         return self.output_tensor

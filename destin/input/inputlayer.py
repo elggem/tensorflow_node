@@ -21,16 +21,16 @@ class InputLayer(object):
     def __init__(self, output_size=(28,28)):
         self.name = 'inputlayer-%08x' % random.getrandbits(32)
         self.output_size = output_size
-        
-        with tf.variable_scope(self.name) as scope:
-            self.variable_scope = scope
+
+        with tf.name_scope(self.name) as n_scope:
+            self.name_scope = n_scope
             self.input_placeholder = tf.placeholder(dtype=tf.float32, shape=(output_size[0], output_size[1], 1), name='input')
 
         self.assertions()
         log.debug("📸 Input Layer initalized")
 
     def get_tensor_for_region(self, region):
-        with tf.name_scope(self.name):
+        with tf.name_scope(self.name_scope):
             # crop params are vertical top left, horizontal top left, height, width
             cropped = tf.image.crop_to_bounding_box(self.input_placeholder, region[1], region[0], region[3], region[2])
             flattened = tf.reshape(cropped, [-1])
