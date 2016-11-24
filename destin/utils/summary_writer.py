@@ -22,7 +22,7 @@ class SummaryWriter(object):
             self.writer = tf.train.SummaryWriter(self.directory)
 
             # log to file
-            log.getLogger().addHandler(logging.FileHandler(self.directory+"/log", mode='a'))
+            log.getLogger().addHandler(log.FileHandler(self.directory+"/log", mode='a'))
 
     def get_output_folder(self, path):
       output_path = pjoin(os.getcwd(), 'output', path)

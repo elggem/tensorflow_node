@@ -15,9 +15,11 @@ I've put todos and remaining tasks in the projects tab on Github. Feel free to c
 
 ## I want to run it!
 
-Clone the repo, [install tensorflow](https://www.tensorflow.org/versions/r0.10/get_started/os_setup.html) on your machine and execute the following from the root directory:
+Clone the repo, and link package by executing the following from project root:
 
-    python tests/callbacks.py
+    pip install -e .
+
+To run execute one of the test scripts in `tests`.
 
 TF summaries are being written to `outputs/summaries`, and they can be inspected via this command:
 

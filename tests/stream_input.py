@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from code import StackedAutoEncoder
-from code import SummaryWriter
-from code import OpenCVInputLayer
-from code import log
+import logging as log
+
+from destin import StackedAutoEncoder
+from destin import SummaryWriter
+from destin import OpenCVInputLayer
 
 log.info("recording summaries to " + SummaryWriter().get_summary_folder())
 
