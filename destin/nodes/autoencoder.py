@@ -10,6 +10,7 @@ import abc
 import random
 import logging as log
 import tensorflow as tf
+import numpy as np
 
 from destin import SummaryWriter
 
@@ -24,9 +25,9 @@ class AutoEncoderNode(object):
                  activation="linear", 
                  epochs=100, 
                  noise_type="normal", 
-                 noise_amount=0.5, 
+                 noise_amount=0.2, 
                  loss="rmse", 
-                 lr=0.005):
+                 lr=0.007):
 
         self.name = name+'-%08x' % random.getrandbits(32)
         self.session=session
@@ -70,9 +71,7 @@ class AutoEncoderNode(object):
         with tf.name_scope(self.scope):
             # input placeholders            
             with tf.name_scope('input'):
-                x = tf.concat(0, self.input_tensors)
-                x = tf.reshape(x, [-1])
-                x = tf.reshape(x, [1, -1]) ### TODO is this really needed, how can I get rid of batch_size?
+                x = tf.concat(1, self.input_tensors)
                 x_ = self.add_noise(x, self.noise_type, self.noise_amount)
 
                 input_dim = x.get_shape()[1]
@@ -83,6 +82,9 @@ class AutoEncoderNode(object):
                 decode_weights = tf.transpose(encode_weights)
                 encode_biases = tf.get_variable("encode_biases", (self.hidden_dim), initializer=tf.random_normal_initializer())
                 decode_biases = tf.get_variable("decode_biases", (input_dim), initializer=tf.random_normal_initializer())
+
+            # export weights for max activation plot
+            self.encode_weights = encode_weights
 
             with tf.name_scope("encoded"):
                 encoded = self.activate(tf.matmul(x, encode_weights) + encode_biases, self.activation, name="encoded")
@@ -111,8 +113,12 @@ class AutoEncoderNode(object):
             # initalize all new variables
             self.session.run(tf.initialize_variables(set(tf.all_variables()) - temp))
         
+            # make train_op dependent on output tensor to trigger train on every evaluation.
+            # currently train_op is triggered seperately from destin.
+            
             #with self.session.graph.control_dependencies([encoded, train_op]):
             #    self.output_tensor = tf.identity(encoded, name="output_tensor")
+
             self.train_op = train_op
             self.output_tensor = encoded
 
@@ -143,6 +149,32 @@ class AutoEncoderNode(object):
             return tf.nn.relu(linear_input, name=name)
         elif activation_type == 'linear':
             return linear_input
+
+    # visualizations
+
+    # visualization of maximum activation for all hidden neurons
+    # according to: http://deeplearning.stanford.edu/wiki/index.php/Visualizing_a_Trained_Autoencoder)
+    def max_activations(self):        
+        outputs = []
+
+        W = self.encode_weights.eval()
+
+        #calculate for each hidden neuron
+        for i in xrange(W.shape[1]):
+            output = np.array(np.zeros(W.shape[0]),dtype='float32')
+        
+            W_ij_sum = 0
+
+            for j in xrange(W.shape[0]):
+                W_ij_sum += np.power(W[j][i],2)
+        
+            for j in xrange(W.shape[0]):
+                W_ij = W[j][i]
+                output[j] = (W_ij)/(np.sqrt(W_ij_sum))
+
+            outputs.append(output)
+
+        return outputs
 
 
     # I/O

@@ -3,6 +3,7 @@
 import os
 import datetime
 import tensorflow as tf
+import numpy as np
 from os.path import join as pjoin
 import logging as log
 
@@ -32,3 +33,44 @@ class SummaryWriter(object):
 
     def get_summary_folder(self):
         return self.directory
+
+    def batch_of_1d_to_image_grid(self, batch):
+        batch = np.array(batch)
+
+        data_wh = int(np.ceil(np.power(batch.shape[1],0.5)))
+        data_shape = [data_wh, data_wh]
+
+        output_grid_wh = int(np.ceil(np.power(batch.shape[0],0.5)))
+
+        output_rows = []
+        outputs = []
+
+        for data in batch:
+            z_pad = np.zeros((data_wh*data_wh)-len(data))
+
+            if (len(z_pad)>0):
+                data = np.concatenate(data,z_pad)
+
+            image = data.reshape(data_shape)
+            image = np.pad(image, pad_width=(1,1), mode='constant', constant_values=0)
+            outputs.append(image)
+
+        while len(outputs)<(output_grid_wh*output_grid_wh):
+            outputs.append(np.zeros([data_shape[0]+2, data_shape[1]+2]))
+
+        for i in xrange(output_grid_wh):
+            output_rows.append(np.concatenate(outputs[i*output_grid_wh:(i*output_grid_wh)+output_grid_wh], 0))
+
+        activation_image = np.concatenate(output_rows, 1)
+
+        return activation_image
+
+    def image_summary(self, tag, image):
+        image_summary_op = tf.image_summary(tag, image.reshape((1, image.shape[0], image.shape[1], 1)))
+        image_summary_str = tf.Session().run(image_summary_op)
+        
+        SummaryWriter().writer.add_summary(image_summary_str, 0)
+        SummaryWriter().writer.flush()
+
+        log.info("📈 "+tag+" image plotted.")
+        pass
