@@ -47,7 +47,7 @@ with tf.Session() as sess:
             hidden_dim=16
         )
 
-    inputlayer = OpenCVInputLayer(output_size=(28,28), batch_size=50)
+    inputlayer = OpenCVInputLayer(output_size=(28,28), batch_size=250)
     
     ae_bottom_a.register_tensor(inputlayer.get_tensor_for_region([00,00,14,14]))
     ae_bottom_b.register_tensor(inputlayer.get_tensor_for_region([00,14,14,14]))
@@ -70,7 +70,9 @@ with tf.Session() as sess:
         global iteration
         iteration += 1
         
-        sess.run(merged_train_op, feed_dict=feed_dict)
+        for _ in xrange(100):
+            sess.run(merged_train_op, feed_dict=feed_dict)
+            sess.run(ae_top.train_op, feed_dict=feed_dict)
 
         #summary_str = merged_summary_op.eval(feed_dict=feed_dict)
         #SummaryWriter().writer.add_summary(summary_str, iteration)
@@ -81,7 +83,7 @@ with tf.Session() as sess:
 
 
 
-    inputlayer.feed_video(feed_callback, "data/mnist.mp4", frames=10000)
+    inputlayer.feed_video(feed_callback, "data/mnist.mp4", frames=30000)
 
 
     # initialize summary writer with graph 
