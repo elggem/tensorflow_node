@@ -33,7 +33,7 @@ class InputLayer(object):
 
     def get_tensor_for_region(self, region):
         with tf.name_scope(self.name_scope):
-            # crop params are vertical top left, horizontal top left, height, width
+            # this is a possible performance hog
             cropped = tf.slice(self.input_placeholder, [0,region[0],region[1],0], [-1,region[2],region[3],-1])
             flattened = tf.reshape(cropped, [self.batch_size,-1])
         return flattened
