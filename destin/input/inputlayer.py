@@ -34,7 +34,8 @@ class InputLayer(object):
     def get_tensor_for_region(self, region):
         with tf.name_scope(self.name_scope):
             # crop params are vertical top left, horizontal top left, height, width
-            cropped = tf.map_fn(lambda img: tf.image.crop_to_bounding_box(img, region[1], region[0], region[3], region[2]), self.input_placeholder)
+            #cropped = tf.map_fn(lambda img: tf.image.crop_to_bounding_box(img, region[1], region[0], region[3], region[2]), self.input_placeholder)
+            cropped = self.input_placeholder
             flattened = tf.reshape(cropped, [self.batch_size,-1])
 
         return flattened
