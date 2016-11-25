@@ -34,6 +34,8 @@ class SummaryWriter(object):
     def get_summary_folder(self):
         return self.directory
 
+
+
     def batch_of_1d_to_image_grid(self, batch):
         batch = np.array(batch)
 
@@ -46,6 +48,9 @@ class SummaryWriter(object):
         outputs = []
 
         for data in batch:
+            data -= data.min()
+            data *= 1.0/data.max()
+
             z_pad = np.zeros((data_wh*data_wh)-len(data))
 
             if (len(z_pad)>0):
@@ -65,8 +70,13 @@ class SummaryWriter(object):
 
         return activation_image
 
+
+
     def image_summary(self, tag, image):
-        image_summary_op = tf.image_summary(tag, image.reshape((1, image.shape[0], image.shape[1], 1)))
+        image = image.reshape((1, image.shape[0], image.shape[1], 1))
+        image.dtype = np.float32
+
+        image_summary_op = tf.image_summary(tag, image)
         image_summary_str = tf.Session().run(image_summary_op)
         
         SummaryWriter().writer.add_summary(image_summary_str, 0)
