@@ -35,7 +35,7 @@ with tf.Session(config=tf.ConfigProto(intra_op_parallelism_threads=4)) as sess:
     ae_bottom_a.register_tensor(inputlayer.get_tensor_for_region([0,0,28,28]))
     ae_bottom_a.initialize_graph()
 
-    ae_bottom_b.register_tensor(inputlayer2.get_tensor_for_region([0,0,28,28]))
+    ae_bottom_b.register_tensor(inputlayer.get_tensor_for_region([0,0,28,28]))
     ae_bottom_b.initialize_graph()
 
     # initialize summary writer with graph 
