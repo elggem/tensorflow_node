@@ -30,7 +30,7 @@ with tf.Session() as sess:
             name="top"
         )
 
-    inputlayer = OpenCVInputLayer(output_size=(28,28), batch_size=100)
+    inputlayer = OpenCVInputLayer(output_size=(28,28), batch_size=250)
     
     ae_bottom_a.register_tensor(inputlayer.get_tensor_for_region([0,0,28,28]))
     ae_bottom_b.register_tensor(inputlayer.get_tensor_for_region([0,0,28,28]))
@@ -47,7 +47,8 @@ with tf.Session() as sess:
         global iteration
         iteration += 1
         
-        sess.run([ae_bottom_a.train_op, ae_bottom_b.train_op, ae_top.train_op], feed_dict=feed_dict)
+        #sess.run([ae_bottom_a.train_op, ae_bottom_b.train_op, ae_top.train_op], feed_dict=feed_dict)
+        sess.run(ae_bottom_a.train_op, feed_dict=feed_dict)
 
         #summary_str = merged_summary_op.eval(feed_dict=feed_dict)
         #SummaryWriter().writer.add_summary(summary_str, iteration)
@@ -58,7 +59,7 @@ with tf.Session() as sess:
 
 
 
-    inputlayer.feed_video(feed_callback, "data/mnist.mp4", frames=20000)
+    inputlayer.feed_video(feed_callback, "data/mnist.mp4", frames=30000)
 
 
     # initialize summary writer with graph 

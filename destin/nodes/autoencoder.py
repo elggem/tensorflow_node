@@ -62,7 +62,7 @@ class AutoEncoderNode(object):
         return self.output_tensor
 
     def initialize_graph(self):
-        log.debug(self.name+ " initializing output tensor...")
+        log.debug(self.name+ " initializing output tensor...    ")
 
         # store all variables, so that we can later determinate what new variables there are
         temp = set(tf.all_variables())
@@ -72,9 +72,7 @@ class AutoEncoderNode(object):
             # input placeholders            
             with tf.name_scope('input'):
                 x = tf.concat(1, self.input_tensors)
-                
-                x_ = tf.identity(x) ####TODO: NOISE
-                #x_ = self.add_noise(x, self.noise_type, self.noise_amount)
+                x_ = self.add_noise(x, self.noise_type, self.noise_amount)
 
                 input_dim = x.get_shape()[1]
     

@@ -15,8 +15,7 @@ from destin import OpenCVInputLayer
 log.info("recording summaries to " + SummaryWriter().get_summary_folder())
 
 with tf.Session(config=tf.ConfigProto(intra_op_parallelism_threads=4)) as sess:
-    inputlayer = OpenCVInputLayer(output_size=(28,28), batch_size=1000)
-    inputlayer2 = OpenCVInputLayer(output_size=(28,28), batch_size=1000)
+    inputlayer = OpenCVInputLayer(output_size=(28,28), batch_size=250)
 
     ae_bottom_a = AutoEncoderNode(
             session = sess,
@@ -50,9 +49,6 @@ with tf.Session(config=tf.ConfigProto(intra_op_parallelism_threads=4)) as sess:
     def feed_callback(feed_dict):
         global iteration
         iteration += 1
-        batch = feed_dict.values()[0]
-        
-        feed_dict = {inputlayer.name+'/input:0': batch, inputlayer2.name+'/input:0': batch}
 
         #for _ in xrange(50):
         summary_str, _,_ = sess.run([merged_summary_op, ae_bottom_a.train_op,ae_bottom_b.train_op], feed_dict=feed_dict, options=run_options, run_metadata=run_metadata)
@@ -62,7 +58,7 @@ with tf.Session(config=tf.ConfigProto(intra_op_parallelism_threads=4)) as sess:
         SummaryWriter().writer.flush()
 
 
-    inputlayer.feed_video(feed_callback, "data/mnist.mp4", frames=1002)
+    inputlayer.feed_video(feed_callback, "data/mnist.mp4", frames=1000)
 
     SummaryWriter().writer.add_run_metadata(run_metadata, "run")
 

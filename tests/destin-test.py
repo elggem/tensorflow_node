@@ -47,9 +47,9 @@ with tf.Session() as sess:
             hidden_dim=16
         )
 
-    inputlayer = OpenCVInputLayer(output_size=(28,28), batch_size=1000)
+    inputlayer = OpenCVInputLayer(output_size=(28,28), batch_size=250)
     
-    ae_bottom_a.register_tensor(inputlayer.get_tensor_for_region([00,00,28,28]))
+    ae_bottom_a.register_tensor(inputlayer.get_tensor_for_region([00,00,14,14]))
     ae_bottom_b.register_tensor(inputlayer.get_tensor_for_region([00,14,14,14]))
     ae_bottom_c.register_tensor(inputlayer.get_tensor_for_region([14,00,14,14]))
     ae_bottom_d.register_tensor(inputlayer.get_tensor_for_region([14,14,14,14]))
@@ -58,13 +58,16 @@ with tf.Session() as sess:
     ae_bottom_b.initialize_graph()
     ae_bottom_c.initialize_graph()
     ae_bottom_d.initialize_graph()
-    #ae_top.register_tensor(ae_bottom_a.get_output_tensor())
-    #ae_top.register_tensor(ae_bottom_b.get_output_tensor())
-    #ae_top.register_tensor(ae_bottom_c.get_output_tensor())
-    #ae_top.register_tensor(ae_bottom_d.get_output_tensor())
 
-    #ae_top.initialize_graph()
+    ae_top.register_tensor(ae_bottom_a.get_output_tensor())
+    ae_top.register_tensor(ae_bottom_b.get_output_tensor())
+    ae_top.register_tensor(ae_bottom_c.get_output_tensor())
+    ae_top.register_tensor(ae_bottom_d.get_output_tensor())
 
+    ae_top.initialize_graph()
+
+    # initialize summary writer with graph 
+    SummaryWriter().writer.add_graph(sess.graph)
     merged_summary_op = tf.merge_all_summaries()
 
     merged_train_ops = [ae_bottom_a.train_op, ae_bottom_b.train_op, ae_bottom_c.train_op, ae_bottom_d.train_op]    
@@ -77,19 +80,13 @@ with tf.Session() as sess:
         
         for _ in xrange(50):
             sess.run(merged_train_ops, feed_dict=feed_dict)
-            #sess.run(ae_top.train_op, feed_dict=feed_dict)
+            sess.run(ae_top.train_op, feed_dict=feed_dict)
 
-        #summary_str = merged_summary_op.eval(feed_dict=feed_dict)
-        #SummaryWriter().writer.add_summary(summary_str, iteration)
-        #SummaryWriter().writer.flush()
-
-
-        
-
+        summary_str = merged_summary_op.eval(feed_dict=feed_dict)
+        SummaryWriter().writer.add_summary(summary_str, iteration)
+        SummaryWriter().writer.flush()
 
 
     inputlayer.feed_video(feed_callback, "data/mnist.mp4", frames=10000)
 
 
-    # initialize summary writer with graph 
-    SummaryWriter().writer.add_graph(sess.graph)
