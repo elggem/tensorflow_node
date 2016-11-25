@@ -15,7 +15,7 @@ from destin import OpenCVInputLayer
 log.info("recording summaries to " + SummaryWriter().get_summary_folder())
 
 with tf.Session() as sess:
-    inputlayer = OpenCVInputLayer(output_size=(28,28), batch_size=100)
+    inputlayer = OpenCVInputLayer(output_size=(28,28), batch_size=1000)
 
     ae_bottom_a = AutoEncoderNode(
             session = sess,
@@ -40,32 +40,32 @@ with tf.Session() as sess:
     # initialize summary writer with graph 
     SummaryWriter().writer.add_graph(sess.graph)
     merged_summary_op = tf.merge_all_summaries()          
-    #run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
-    #run_metadata = tf.RunMetadata()
+    
+    run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+    run_metadata = tf.RunMetadata()
 
     iteration = 0
 
     def feed_callback(feed_dict):
         global iteration
         iteration += 1
-        log.info("IT %d", iteration)
 
         #for _ in xrange(50):
-        summary_str, _,_ = sess.run([merged_summary_op, ae_bottom_a.train_op,ae_bottom_b.train_op], feed_dict=feed_dict)
+        summary_str, _,_ = sess.run([merged_summary_op, ae_bottom_a.train_op,ae_bottom_b.train_op], feed_dict=feed_dict, options=run_options, run_metadata=run_metadata)
 
         SummaryWriter().writer.add_summary(summary_str, iteration)
         SummaryWriter().writer.flush()
 
 
-    inputlayer.feed_video(feed_callback, "data/mnist.mp4", frames=10000)
+    inputlayer.feed_video(feed_callback, "data/mnist.mp4", frames=1002)
 
-    #SummaryWriter().writer.add_run_metadata(run_metadata, "run")
+    SummaryWriter().writer.add_run_metadata(run_metadata, "run")
 
-    #tl = timeline.Timeline(run_metadata.step_stats)
-    #ctf = tl.generate_chrome_trace_format()
-    #with open(SummaryWriter().get_output_folder('timelines')+"/timeline.json", 'w') as f:
-    #    f.write(ctf)
-    #    log.info("📊 written timeline trace.")
+    tl = timeline.Timeline(run_metadata.step_stats)
+    ctf = tl.generate_chrome_trace_format()
+    with open(SummaryWriter().get_output_folder('timelines')+"/timeline.json", 'w') as f:
+        f.write(ctf)
+        log.info("📊 written timeline trace.")
 
     #image = SummaryWriter().batch_of_1d_to_image_grid(ae_bottom_a.max_activations())
     #SummaryWriter().image_summary(ae_bottom_a.name, image)

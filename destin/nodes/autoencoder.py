@@ -72,7 +72,9 @@ class AutoEncoderNode(object):
             # input placeholders            
             with tf.name_scope('input'):
                 x = tf.concat(1, self.input_tensors)
-                x_ = self.add_noise(x, self.noise_type, self.noise_amount)
+                
+                x_ = tf.identity(x) ####TODO: NOISE
+                #x_ = self.add_noise(x, self.noise_type, self.noise_amount)
 
                 input_dim = x.get_shape()[1]
     
@@ -155,6 +157,7 @@ class AutoEncoderNode(object):
     # visualization of maximum activation for all hidden neurons
     # according to: http://deeplearning.stanford.edu/wiki/index.php/Visualizing_a_Trained_Autoencoder)
     def max_activations(self):        
+        # TODO rewrite this with more elegant numpy ops or TF.
         outputs = []
 
         W = self.encode_weights.eval()

@@ -47,9 +47,9 @@ with tf.Session() as sess:
             hidden_dim=16
         )
 
-    inputlayer = OpenCVInputLayer(output_size=(28,28), batch_size=250)
+    inputlayer = OpenCVInputLayer(output_size=(28,28), batch_size=1000)
     
-    ae_bottom_a.register_tensor(inputlayer.get_tensor_for_region([00,00,14,14]))
+    ae_bottom_a.register_tensor(inputlayer.get_tensor_for_region([00,00,28,28]))
     ae_bottom_b.register_tensor(inputlayer.get_tensor_for_region([00,14,14,14]))
     ae_bottom_c.register_tensor(inputlayer.get_tensor_for_region([14,00,14,14]))
     ae_bottom_d.register_tensor(inputlayer.get_tensor_for_region([14,14,14,14]))
@@ -61,8 +61,9 @@ with tf.Session() as sess:
 
     ae_top.initialize_graph()
 
-    merged_summary_op = tf.merge_all_summaries()      
-    merged_train_op = [ae_bottom_a.train_op, ae_bottom_b.train_op, ae_bottom_c.train_op, ae_bottom_d.train_op]    
+    merged_summary_op = tf.merge_all_summaries()
+
+    merged_train_ops = [ae_bottom_a.train_op, ae_bottom_b.train_op, ae_bottom_c.train_op, ae_bottom_d.train_op]    
 
     iteration = 0
 
@@ -70,8 +71,8 @@ with tf.Session() as sess:
         global iteration
         iteration += 1
         
-        for _ in xrange(100):
-            sess.run(merged_train_op, feed_dict=feed_dict)
+        for _ in xrange(50):
+            sess.run(merged_train_ops, feed_dict=feed_dict)
             sess.run(ae_top.train_op, feed_dict=feed_dict)
 
         #summary_str = merged_summary_op.eval(feed_dict=feed_dict)
@@ -83,7 +84,7 @@ with tf.Session() as sess:
 
 
 
-    inputlayer.feed_video(feed_callback, "data/mnist.mp4", frames=30000)
+    inputlayer.feed_video(feed_callback, "data/mnist.mp4", frames=10000)
 
 
     # initialize summary writer with graph 
