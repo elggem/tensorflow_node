@@ -54,12 +54,16 @@ with tf.Session() as sess:
     ae_bottom_c.register_tensor(inputlayer.get_tensor_for_region([14,00,14,14]))
     ae_bottom_d.register_tensor(inputlayer.get_tensor_for_region([14,14,14,14]))
 
-    ae_top.register_tensor(ae_bottom_a.get_output_tensor())
-    ae_top.register_tensor(ae_bottom_b.get_output_tensor())
-    ae_top.register_tensor(ae_bottom_c.get_output_tensor())
-    ae_top.register_tensor(ae_bottom_d.get_output_tensor())
+    ae_bottom_a.initialize_graph()
+    ae_bottom_b.initialize_graph()
+    ae_bottom_c.initialize_graph()
+    ae_bottom_d.initialize_graph()
+    #ae_top.register_tensor(ae_bottom_a.get_output_tensor())
+    #ae_top.register_tensor(ae_bottom_b.get_output_tensor())
+    #ae_top.register_tensor(ae_bottom_c.get_output_tensor())
+    #ae_top.register_tensor(ae_bottom_d.get_output_tensor())
 
-    ae_top.initialize_graph()
+    #ae_top.initialize_graph()
 
     merged_summary_op = tf.merge_all_summaries()
 
@@ -73,7 +77,7 @@ with tf.Session() as sess:
         
         for _ in xrange(50):
             sess.run(merged_train_ops, feed_dict=feed_dict)
-            sess.run(ae_top.train_op, feed_dict=feed_dict)
+            #sess.run(ae_top.train_op, feed_dict=feed_dict)
 
         #summary_str = merged_summary_op.eval(feed_dict=feed_dict)
         #SummaryWriter().writer.add_summary(summary_str, iteration)
