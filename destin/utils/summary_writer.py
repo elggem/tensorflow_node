@@ -37,6 +37,7 @@ class SummaryWriter(object):
 
 
     def batch_of_1d_to_image_grid(self, batch):
+        #TODO refactor
         batch = np.array(batch)
 
         data_wh = int(np.ceil(np.power(batch.shape[1],0.5)))
@@ -73,8 +74,7 @@ class SummaryWriter(object):
 
 
     def image_summary(self, tag, image):
-        image = image.reshape((1, image.shape[0], image.shape[1], 1))
-        image.dtype = np.float32
+        image = image.reshape((1, image.shape[0], image.shape[1], 1)).astype(np.float32)
 
         image_summary_op = tf.image_summary(tag, image)
         image_summary_str = tf.Session().run(image_summary_op)

@@ -49,9 +49,9 @@ with tf.Session() as sess:
 
     inputlayer = OpenCVInputLayer(output_size=(28,28), batch_size=250)
     
-    ae_bottom_a.register_tensor(inputlayer.get_tensor_for_region([00,00,14,14]))
-    ae_bottom_b.register_tensor(inputlayer.get_tensor_for_region([00,14,14,14]))
-    ae_bottom_c.register_tensor(inputlayer.get_tensor_for_region([14,00,14,14]))
+    ae_bottom_a.register_tensor(inputlayer.get_tensor_for_region([0,0,14,14]))
+    ae_bottom_b.register_tensor(inputlayer.get_tensor_for_region([0,14,14,14]))
+    ae_bottom_c.register_tensor(inputlayer.get_tensor_for_region([14,0,14,14]))
     ae_bottom_d.register_tensor(inputlayer.get_tensor_for_region([14,14,14,14]))
 
     ae_bottom_a.initialize_graph()
@@ -60,8 +60,8 @@ with tf.Session() as sess:
     ae_bottom_d.initialize_graph()
 
     ae_top.register_tensor(ae_bottom_a.get_output_tensor())
-    ae_top.register_tensor(ae_bottom_b.get_output_tensor())
     ae_top.register_tensor(ae_bottom_c.get_output_tensor())
+    ae_top.register_tensor(ae_bottom_b.get_output_tensor())
     ae_top.register_tensor(ae_bottom_d.get_output_tensor())
 
     ae_top.initialize_graph()
@@ -80,13 +80,39 @@ with tf.Session() as sess:
         
         for _ in xrange(50):
             sess.run(merged_train_ops, feed_dict=feed_dict)
+
+        for _ in xrange(50):
             sess.run(ae_top.train_op, feed_dict=feed_dict)
 
-        summary_str = merged_summary_op.eval(feed_dict=feed_dict)
-        SummaryWriter().writer.add_summary(summary_str, iteration)
-        SummaryWriter().writer.flush()
+        #summary_str = merged_summary_op.eval(feed_dict=feed_dict)
+        #SummaryWriter().writer.add_summary(summary_str, iteration)
+        #SummaryWriter().writer.flush()
 
 
-    inputlayer.feed_video(feed_callback, "data/mnist.mp4", frames=10000)
+    inputlayer.feed_video(feed_callback, "data/mnist.mp4", frames=54000)
+
+    image = ae_top.max_activation_recursive_summary()
+    SummaryWriter().image_summary(ae_top.name, image)
+
+    image = SummaryWriter().batch_of_1d_to_image_grid(ae_bottom_a.max_activations.eval())
+    SummaryWriter().image_summary(ae_bottom_a.name, image)
+
+    image = SummaryWriter().batch_of_1d_to_image_grid(ae_bottom_b.max_activations.eval())
+    SummaryWriter().image_summary(ae_bottom_b.name, image)
+
+    image = SummaryWriter().batch_of_1d_to_image_grid(ae_bottom_c.max_activations.eval())
+    SummaryWriter().image_summary(ae_bottom_c.name, image)
+
+    image = SummaryWriter().batch_of_1d_to_image_grid(ae_bottom_d.max_activations.eval())
+    SummaryWriter().image_summary(ae_bottom_d.name, image)
+
+
+
+
+
+
+
+
+
 
 

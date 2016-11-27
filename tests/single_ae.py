@@ -16,13 +16,12 @@ with tf.Session() as sess:
     ae = AutoEncoderNode(
             session = sess,
             name="ae",
-            hidden_dim=100
-
+            hidden_dim=40
         )
 
     inputlayer = OpenCVInputLayer(output_size=(28,28), batch_size=250)
     
-    ae.register_tensor(inputlayer.get_tensor_for_region([0,0,28,28]))
+    ae.register_tensor(inputlayer.get_tensor_for_region([00,14,14,14]))
 
     ae.initialize_graph()
 
@@ -39,14 +38,14 @@ with tf.Session() as sess:
         for _ in xrange(50):
             sess.run(ae.train_op, feed_dict=feed_dict) 
 
-        summary_str = merged_summary_op.eval(feed_dict=feed_dict)
-        SummaryWriter().writer.add_summary(summary_str, iteration)
-        SummaryWriter().writer.flush()
+        #summary_str = merged_summary_op.eval(feed_dict=feed_dict)
+        #SummaryWriter().writer.add_summary(summary_str, iteration)
+        #SummaryWriter().writer.flush()
 
 
 
-    inputlayer.feed_video(feed_callback, "data/mnist.mp4", frames=30000)
+    inputlayer.feed_video(feed_callback, "data/mnist.mp4", frames=50000)
 
-    image = SummaryWriter().batch_of_1d_to_image_grid(ae.max_activations_tf().eval())
-    SummaryWriter().image_summary(ae.name, image)
+    image = SummaryWriter().batch_of_1d_to_image_grid(ae.max_activations.eval())
+    SummaryWriter().image_summary(ae.name+"hoiho", image)
     

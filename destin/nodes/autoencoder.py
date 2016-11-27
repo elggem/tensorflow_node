@@ -69,61 +69,63 @@ class AutoEncoderNode(object):
 
         # get absolute scope
         with tf.name_scope(self.scope):
-            # input placeholders            
-            with tf.name_scope('input'):
-                x = tf.concat(1, self.input_tensors)
+            
+            with tf.variable_scope(self.name):
+                input_concat = tf.concat(1, self.input_tensors)
+                input_dim = input_concat.get_shape()[1]
+
+                x = tf.get_variable("input_copy", input_concat.get_shape())
                 x_ = self.add_noise(x, self.noise_type, self.noise_amount)
 
-                input_dim = x.get_shape()[1]
-    
-            # weight and bias variables
-            with tf.variable_scope(self.name):
+                # we need to make a deep copy to prevent losses from affecting bottom layers.
+                assign = x.assign(input_concat)
+
                 encode_weights = tf.get_variable("encode_weights", (input_dim, self.hidden_dim), initializer=tf.random_normal_initializer())
                 decode_weights = tf.transpose(encode_weights)
                 encode_biases = tf.get_variable("encode_biases", (self.hidden_dim), initializer=tf.random_normal_initializer())
                 decode_biases = tf.get_variable("decode_biases", (input_dim), initializer=tf.random_normal_initializer())
 
-            # export weights for max activation plot
-            self.encode_weights = encode_weights
+            # visualization of maximum activation for all hidden neurons
+            # according to: http://deeplearning.stanford.edu/wiki/index.php/Visualizing_a_Trained_Autoencoder
+            self.max_activations = tf.transpose(encode_weights / tf.reduce_sum(tf.pow(encode_weights, 2)))
 
-            with tf.name_scope("encoded"):
-                encoded = self.activate(tf.matmul(x, encode_weights) + encode_biases, self.activation, name="encoded")
-
-            with tf.name_scope("decoded"):
-                decoded = self.activate(tf.matmul(encoded, decode_weights) + decode_biases, self.activation, name="decoded")
-
-            with tf.name_scope("loss"):
-                # reconstruction loss
-                if self.loss == 'rmse':
-                    loss = tf.sqrt(tf.reduce_mean(tf.square(tf.sub(x_, decoded))))
-                elif self.loss == 'cross-entropy':
-                    #loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(decoded, x_))  ### TODO this is not working in it's current form! why?
-                    loss = -tf.reduce_mean(x_ * tf.log(decoded))
-                # record loss
+            # ensure deep copy for these operations
+            with self.session.graph.control_dependencies([assign]):
+                with tf.name_scope("encoded"):
+                    encoded = self.activate(tf.matmul(x, encode_weights) + encode_biases, self.activation, name="encoded")
+    
+                with tf.name_scope("decoded"):
+                    decoded = self.activate(tf.matmul(encoded, decode_weights) + decode_biases, self.activation, name="decoded")
+    
+                with tf.name_scope("loss"):
+                    # reconstruction loss
+                    if self.loss == 'rmse':
+                        loss = tf.sqrt(tf.reduce_mean(tf.square(tf.sub(x_, decoded))))
+                    elif self.loss == 'cross-entropy':
+                        #loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(decoded, x_))  ### TODO this is not working in it's current form! why?
+                        loss = -tf.reduce_mean(x_ * tf.log(decoded))
+                    # record loss
+                
+                with tf.name_scope("train"):
+                    train_op = tf.train.AdamOptimizer(self.lr).minimize(loss)
+    
+                tf.scalar_summary(self.name+"_loss", loss)
+                tf.histogram_summary(self.name+"_encode_weights", encode_weights)
+                tf.histogram_summary(self.name+"_encode_biases",  encode_biases)
+                tf.histogram_summary(self.name+"_decode_weights", decode_weights)
+                tf.histogram_summary(self.name+"_decode_biases",  decode_biases)               
             
-            with tf.name_scope("train"):
-                train_op = tf.train.AdamOptimizer(self.lr).minimize(loss)
-
-            tf.scalar_summary(self.name+"_loss", loss)
-            tf.histogram_summary(self.name+"_encode_weights", encode_weights)
-            tf.histogram_summary(self.name+"_encode_biases",  encode_biases)
-            tf.histogram_summary(self.name+"_decode_weights", decode_weights)
-            tf.histogram_summary(self.name+"_decode_biases",  decode_biases)               
-
             # initalize all new variables
             self.session.run(tf.initialize_variables(set(tf.all_variables()) - temp))
-        
-            # make train_op dependent on output tensor to trigger train on every evaluation.
-            # currently train_op is triggered seperately from destin.
-            
-            #with self.session.graph.control_dependencies([encoded, train_op]):
-            #    self.output_tensor = tf.identity(encoded, name="output_tensor")
+
+            # attach reference to ourselve for recursive plot.
+            train_op.sender = self
+            encoded.sender = self
 
             self.train_op = train_op
             self.output_tensor = encoded
 
         return
-
 
     # noise for denoising AE.
     def add_noise(self, x, noise_type, noise_amount=0.5):
@@ -152,11 +154,79 @@ class AutoEncoderNode(object):
 
     # visualizations
 
-    # visualization of maximum activation for all hidden neurons
-    # according to: http://deeplearning.stanford.edu/wiki/index.php/Visualizing_a_Trained_Autoencoder
-    def max_activations_tf(self):
-        W = self.encode_weights # input_dim x hidden_dim
-        return tf.transpose(W / tf.reduce_sum(tf.pow(W, 2))) # hidden_dim x input_dim
+    def max_activation_recursive(self):
+        ## refactor make this work without loops.
+        recursive_activations = []
+
+        i = 0
+        #1 calculate max_activation (hidden x input_dim matrix)
+        for max_activation in self.max_activations.eval():
+            #log.critical("looking at hidden neuron " + str(i))
+            i += 1
+            #2 for each input_dim matrix split it up according to input_buffer (AE: sender.ndims[-1] - inputlayer: sender.dims_for_receiver(self))
+            dimcounter = 0
+            activation = []
+
+            for input_tensor in self.input_tensors:
+                sender = input_tensor.sender
+                ndims = input_tensor.get_shape()[1].value
+                #log.critical("   looking at " + sender.name)
+                if (sender.__class__ == self.__class__):
+                    sender_activation = max_activation[dimcounter:dimcounter+ndims]
+                    log.critical("Got slice " + str(dimcounter) +" to " + str(dimcounter+ndims) + " from max_activation.")
+                    dimcounter += ndims
+                    #3 for each input_buffer that is AE ask for max_activation object and multiply
+                    sender_max_activations = sender.max_activation_recursive()
+                    #sender activation = |hl| and sender_max_activations = hl x input
+                    A = np.array(sender_activation)
+                    B = np.array(sender_max_activations)
+                    C = (A[:, np.newaxis] * B).sum(axis=0)
+                    activation.append(C)
+
+                elif (str(sender.__class__).find("InputLayer")):
+                    sender_activation = max_activation[dimcounter:dimcounter+ndims]
+                    dimcounter += ndims
+                    #4 for each input_buffer that is input_layer return it
+                    activation.append(sender_activation)
+            
+            recursive_activations.append(np.concatenate(activation))
+
+        recursive_activations = np.array(recursive_activations)
+        print recursive_activations.shape
+
+        return recursive_activations
+
+   
+    def max_activation_recursive_summary(self):
+        # TODO: this is horrible, but it works. :)
+        sess = self.session
+
+        outputs = np.array(self.max_activation_recursive()) ## needs to be reshaped.
+        shaped_outputs = []
+
+        input_wh = int(np.ceil(np.power(outputs.shape[1],0.5)))
+        input_shape = [input_wh, input_wh]
+
+        for output in outputs:
+            #output 0-40, 40-80, 80-120, 120-160
+            A = np.concatenate([output[:196].reshape([14,14]), output[196:392].reshape([14,14])], axis=0) ### TODO: this is hardcoded.
+            B = np.concatenate([output[392:588].reshape([14,14]), output[588:784].reshape([14,14])], axis=0)
+            shaped_outputs.append(np.concatenate([A,B], axis=1))
+
+        output_wh = int(np.floor(np.power(outputs.shape[0],0.5)))
+        output_shape = [input_wh*output_wh, input_wh*output_wh]
+        output_rows = []
+        
+        activation_image = np.zeros(output_shape, dtype=np.float32)
+
+        print output_shape
+
+        for i in xrange(output_wh):
+            output_rows.append(np.concatenate(shaped_outputs[i*output_wh:(i*output_wh)+output_wh], 0))
+
+        activation_image = np.concatenate(output_rows, 1)
+
+        return activation_image
 
 
 

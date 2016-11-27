@@ -14,10 +14,6 @@ class InputLayer(object):
     TODO doc
     """
     
-    def assertions(self):
-        #TODO make sure params are sane
-        assert(42==42)
-    
     def __init__(self, batch_size=1, output_size=(28,28)):
         self.name = 'inputlayer-%08x' % random.getrandbits(32)
         self.output_size = output_size
@@ -28,7 +24,6 @@ class InputLayer(object):
             self.name_scope = n_scope
             self.input_placeholder = tf.placeholder(dtype=tf.float32, shape=(self.batch_size, output_size[0], output_size[1], 1), name='input')
 
-        self.assertions()
         log.debug("📸 Input Layer initalized")
 
     def get_tensor_for_region(self, region):
@@ -36,6 +31,8 @@ class InputLayer(object):
             # this is a possible performance hog
             cropped = tf.slice(self.input_placeholder, [0,region[0],region[1],0], [-1,region[2],region[3],-1])
             flattened = tf.reshape(cropped, [self.batch_size,-1])
+
+        flattened.sender = self
         return flattened
 
 
