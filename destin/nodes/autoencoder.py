@@ -32,7 +32,7 @@ class AutoEncoderNode(object):
         self.name = name+'-%08x' % random.getrandbits(32)
         self.session=session
 
-        # this list is populated 
+        # this list is populated with register tensor function
         self.input_tensors=[]
         # these are initialized upon first call to output_tensor
         self.output_tensor=None
@@ -153,29 +153,12 @@ class AutoEncoderNode(object):
     # visualizations
 
     # visualization of maximum activation for all hidden neurons
-    # according to: http://deeplearning.stanford.edu/wiki/index.php/Visualizing_a_Trained_Autoencoder)
-    def max_activations(self):        
-        # TODO rewrite this with more elegant numpy ops or TF.
-        outputs = []
+    # according to: http://deeplearning.stanford.edu/wiki/index.php/Visualizing_a_Trained_Autoencoder
+    def max_activations_tf(self):
+        W = self.encode_weights # input_dim x hidden_dim
+        return tf.transpose(W / tf.reduce_sum(tf.pow(W, 2))) # hidden_dim x input_dim
 
-        W = self.encode_weights.eval()
 
-        #calculate for each hidden neuron
-        for i in xrange(W.shape[1]):
-            output = np.array(np.zeros(W.shape[0]),dtype='float32')
-        
-            W_ij_sum = 0
-
-            for j in xrange(W.shape[0]):
-                W_ij_sum += np.power(W[j][i],2)
-        
-            for j in xrange(W.shape[0]):
-                W_ij = W[j][i]
-                output[j] = (W_ij)/(np.sqrt(W_ij_sum))
-
-            outputs.append(output)
-
-        return outputs
 
 
     # I/O
