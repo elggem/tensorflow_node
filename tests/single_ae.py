@@ -15,7 +15,7 @@ log.info("recording summaries to " + SummaryWriter().get_summary_folder())
 with tf.Session() as sess:
     ae = AutoEncoderNode(
             session = sess,
-            name="bottom_a",
+            name="ae",
             hidden_dim=100
 
         )
@@ -47,6 +47,6 @@ with tf.Session() as sess:
 
     inputlayer.feed_video(feed_callback, "data/mnist.mp4", frames=30000)
 
-    image = SummaryWriter().batch_of_1d_to_image_grid(ae.max_activations())
+    image = SummaryWriter().batch_of_1d_to_image_grid(ae.max_activations_tf().eval())
     SummaryWriter().image_summary(ae.name, image)
     
