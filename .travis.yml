@@ -7,7 +7,7 @@ python: # Only two versions for now
   - "3.4"
 # command to install dependencies
 install:
-  - apt-get install python-opencv
+  - sudo apt-get install python-opencv
   - pip install numpy
   - pip install matplotlib
   - pip install colorlog
