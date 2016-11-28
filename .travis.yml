@@ -7,11 +7,12 @@ language: python
 python: # Only one version for now, cv2 doesnt work with Python 2.* on travis-ci
   - "2.7"
   - "3.4"
-before_install:
- - sudo apt-get update
-# command to install dependencies
+before_install: [
+    "sudo apt-get update",
+    "sudo apt-get install python-opencv",
+    "sudo dpkg -L python-opencv"
+  ],
 install:
-  - sudo apt-get install python-dev
   - pip install numpy matplotlib colorlog pep8 pytest
   # install TensorFlow from https://storage.googleapis.com/tensorflow/
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
@@ -19,18 +20,9 @@ install:
     elif [[ "$TRAVIS_PYTHON_VERSION" == "3.4" ]]; then
       pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.10.0-cp34-cp34m-linux_x86_64.whl;
     fi
-before_script:
-  - git clone https://github.com/Itseez/opencv.git
-  - cd opencv
-  - git checkout 2.4
-  - mkdir build
-  - cd build
-  - cmake ..
-  - make -j8
-  - sudo make -j8 install
-  - sudo ldconfig
 script:
   - cd $TRAVIS_BUILD_DIR
+  - export PYTHONPATH=/usr/lib/python2.7/dist-packages
   - python setup.py develop 
   - pytest destin/tests
   - pep8 --ignore=E501 ./**/*py
