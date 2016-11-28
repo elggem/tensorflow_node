@@ -1,13 +1,7 @@
 # -*- coding: utf-8 -*-
 
-
-"""
-
-Abstract base node for DeSTIN
-
-"""
-
 import abc
+
 
 class BaseNode(object):
     __metaclass__ = abc.ABCMeta
@@ -16,9 +10,9 @@ class BaseNode(object):
     @abc.abstractmethod
     def __init__(self, session, name="basenode"):
         self.name = name
-        self.session=session
-        self.input_tensors=[]
-        self.output_tensor=None
+        self.session = session
+        self.input_tensors = []
+        self.output_tensor = None
         return
 
     def __del__(self, input):
@@ -38,7 +32,7 @@ class BaseNode(object):
     def load(self, filename):
         """Retrieve model from disk."""
         return
-    
+
     @abc.abstractmethod
     def save(self, filename):
         """Save model to disk."""

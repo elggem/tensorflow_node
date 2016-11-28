@@ -17,4 +17,4 @@ install:
 script:
   - python setup.py develop 
   - pytest destin/tests
-  - pep8 --ignore=E501 ./**/*py
+  - pep8 --ignore=E501 .

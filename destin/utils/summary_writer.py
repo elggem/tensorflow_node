@@ -7,9 +7,11 @@ import numpy as np
 from os.path import join as pjoin
 import logging as log
 
+
 # Singleton
 class SummaryWriter(object):
     _instance = None
+
     def __new__(cls, *args, **kwargs):
         if not cls._instance:
             cls._instance = super(SummaryWriter, cls).__new__(cls, *args, **kwargs)
@@ -19,68 +21,64 @@ class SummaryWriter(object):
         if not hasattr(self, 'writer'):
             log.debug("📊 initializing summary writer.")
             now = datetime.datetime.now()
-            self.directory = self.get_output_folder('summaries')+now.strftime("/%Y-%m-%d-%s")
+            self.directory = self.get_output_folder('summaries') + now.strftime("/%Y-%m-%d-%s")
             self.writer = tf.train.SummaryWriter(self.directory)
 
             # log to file
-            log.getLogger().addHandler(log.FileHandler(self.directory+"/log", mode='a'))
+            log.getLogger().addHandler(log.FileHandler(self.directory + "/log", mode='a'))
 
     def get_output_folder(self, path):
-      output_path = pjoin(os.getcwd(), 'output', path)
-      if not os.path.exists(output_path):
-        os.makedirs(output_path)
-      return output_path
+        output_path = pjoin(os.getcwd(), 'output', path)
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+        return output_path
 
     def get_summary_folder(self):
         return self.directory
 
-
-
     def batch_of_1d_to_image_grid(self, batch):
-        #TODO refactor
+        # TODO refactor
         batch = np.array(batch)
 
-        data_wh = int(np.ceil(np.power(batch.shape[1],0.5)))
+        data_wh = int(np.ceil(np.power(batch.shape[1], 0.5)))
         data_shape = [data_wh, data_wh]
 
-        output_grid_wh = int(np.ceil(np.power(batch.shape[0],0.5)))
+        output_grid_wh = int(np.ceil(np.power(batch.shape[0], 0.5)))
 
         output_rows = []
         outputs = []
 
         for data in batch:
             data -= data.min()
-            data *= 1.0/data.max()
+            data *= 1.0 / data.max()
 
-            z_pad = np.zeros((data_wh*data_wh)-len(data))
+            z_pad = np.zeros((data_wh * data_wh) - len(data))
 
-            if (len(z_pad)>0):
-                data = np.concatenate(data,z_pad)
+            if (len(z_pad) > 0):
+                data = np.concatenate(data, z_pad)
 
             image = data.reshape(data_shape)
-            image = np.pad(image, pad_width=(1,1), mode='constant', constant_values=0)
+            image = np.pad(image, pad_width=(1, 1), mode='constant', constant_values=0)
             outputs.append(image)
 
-        while len(outputs)<(output_grid_wh*output_grid_wh):
-            outputs.append(np.zeros([data_shape[0]+2, data_shape[1]+2]))
+        while len(outputs) < (output_grid_wh * output_grid_wh):
+            outputs.append(np.zeros([data_shape[0] + 2, data_shape[1] + 2]))
 
         for i in xrange(output_grid_wh):
-            output_rows.append(np.concatenate(outputs[i*output_grid_wh:(i*output_grid_wh)+output_grid_wh], 0))
+            output_rows.append(np.concatenate(outputs[i * output_grid_wh:(i * output_grid_wh) + output_grid_wh], 0))
 
         activation_image = np.concatenate(output_rows, 1)
 
         return activation_image
-
-
 
     def image_summary(self, tag, image):
         image = image.reshape((1, image.shape[0], image.shape[1], 1)).astype(np.float32)
 
         image_summary_op = tf.image_summary(tag, image)
         image_summary_str = tf.Session().run(image_summary_op)
-        
+
         SummaryWriter().writer.add_summary(image_summary_str, 0)
         SummaryWriter().writer.flush()
 
-        log.info("📈 "+tag+" image plotted.")
+        log.info("📈 " + tag + " image plotted.")
         pass

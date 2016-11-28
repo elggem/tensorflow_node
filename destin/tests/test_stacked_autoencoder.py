@@ -10,6 +10,7 @@ from destin import StackedAutoEncoderNode
 from destin import SummaryWriter
 from destin import OpenCVInputLayer
 
+
 # this tests very basic functionality of the stacked autoencoder
 class StackedAutoencoderTest(tf.test.TestCase):
 
@@ -18,14 +19,15 @@ class StackedAutoencoderTest(tf.test.TestCase):
             inputlayer = OpenCVInputLayer(output_size=(16, 16), batch_size=250)
             data = np.random.rand(250, 16, 16, 1)
 
-            sae = StackedAutoEncoderNode(session = sess)
-            sae.register_tensor(inputlayer.get_tensor_for_region([0,0,16,16]))
+            sae = StackedAutoEncoderNode(session=sess)
+            sae.register_tensor(inputlayer.get_tensor_for_region([0, 0, 16, 16]))
             output_tensor = sae.get_output_tensor()
-            result = output_tensor.eval(feed_dict={inputlayer.name+"/input:0": data})
+            result = output_tensor.eval(feed_dict={inputlayer.name + "/input:0": data})
 
             SummaryWriter().writer.add_graph(sess.graph)
             assert(result.shape[0] == 250)
             assert(result.shape[1] == 32)
+
 
 if __name__ == '__main__':
     tf.test.main()

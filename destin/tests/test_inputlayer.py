@@ -74,5 +74,6 @@ class InputLayerTest(tf.test.TestCase):
             assert((data_ac == reshaped_ac).all())
             assert((data_bd == reshaped_bd).all())
 
+
 if __name__ == '__main__':
     tf.test.main()

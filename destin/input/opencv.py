@@ -7,6 +7,7 @@ import logging as log
 
 from destin.input import InputLayer
 
+
 class OpenCVInputLayer(InputLayer):
     """
     Contains OpenCV to feed in images and video feeds to TF.
@@ -20,7 +21,7 @@ class OpenCVInputLayer(InputLayer):
             raise IOError("OpenCVLayer - video file not found!")
 
         framecount = frames
-        
+
         cap = cv2.VideoCapture(filename)
 
         while(framecount != 0):
@@ -29,16 +30,16 @@ class OpenCVInputLayer(InputLayer):
             if (not isvalid):
                 break
 
-            res = cv2.resize(frame, self.output_size, interpolation = cv2.INTER_CUBIC)
-            gray = cv2.cvtColor(res, cv2.COLOR_BGR2GRAY) #TODO: allow colour input.
-            gray = gray * 1.0/255
+            res = cv2.resize(frame, self.output_size, interpolation=cv2.INTER_CUBIC)
+            gray = cv2.cvtColor(res, cv2.COLOR_BGR2GRAY)
+            gray = gray * 1.0 / 255
 
-            #use grayscale image
-            self.batch.append(gray.reshape([self.output_size[0],self.output_size[1],1]))
+            # use grayscale image
+            self.batch.append(gray.reshape([self.output_size[0], self.output_size[1], 1]))
 
             # batch is full
             if len(self.batch) >= self.batch_size:
-                feed_dict = {self.name+'/input:0': np.array(self.batch)}
+                feed_dict = {self.name + '/input:0': np.array(self.batch)}
                 feed_callback(feed_dict)
                 self.batch = []
                 log.debug("📸 Evaluated frame %d" % framecount)
@@ -48,6 +49,5 @@ class OpenCVInputLayer(InputLayer):
 
         cap.release()
 
-        if (repeat!=0):
-            self.feed_video(feed_callback, filename, frames=frames, repeat=repeat-1)
-
+        if (repeat != 0):
+            self.feed_video(feed_callback, filename, frames=frames, repeat=repeat - 1)
