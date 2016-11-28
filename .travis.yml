@@ -2,8 +2,7 @@
 sudo: required
 dist: trusty
 language: python
-python: # Only two versions for now
-  - "2.7"
+python: # Only one version for now, cv2 doesnt work with Python 2.* on travis-ci
   - "3.4"
 before_install:
  - sudo apt-get update
@@ -11,18 +10,18 @@ before_install:
  - sudo dpkg -L python-opencv
 # command to install dependencies
 install:
-  - pip install numpy
-  - pip install matplotlib
-  - pip install colorlog
-  - pip install pep8
-  - pip install pytest
+  - pip3 install numpy
+  - pip3 install matplotlib
+  - pip3 install colorlog
+  - pip3 install pep8
+  - pip3 install pytest
   # install destin package
-  - pip install -e .
+  - pip3 install -e .
   # install TensorFlow from https://storage.googleapis.com/tensorflow/
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.10.0-cp27-none-linux_x86_64.whl;
+      pip3 install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.10.0-cp27-none-linux_x86_64.whl;
     elif [[ "$TRAVIS_PYTHON_VERSION" == "3.4" ]]; then
-      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.10.0-cp34-cp34m-linux_x86_64.whl;
+      pip3 install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.10.0-cp34-cp34m-linux_x86_64.whl;
     fi
 script:
   - pytest
