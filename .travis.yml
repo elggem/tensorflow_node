@@ -10,13 +10,7 @@ before_install:
  - sudo dpkg -L python-opencv
 # command to install dependencies
 install:
-  - pip install numpy
-  - pip install matplotlib
-  - pip install colorlog
-  - pip install pep8
-  - pip install pytest
-  # install destin package
-  - pip install -e .
+  - pip install numpy matplotlib colorlog pep8 pytest
   # install TensorFlow from https://storage.googleapis.com/tensorflow/
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
       pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.10.0-cp27-none-linux_x86_64.whl;
@@ -24,5 +18,6 @@ install:
       pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.10.0-cp34-cp34m-linux_x86_64.whl;
     fi
 script:
-  - python setup.py develop && pytest
+  - python setup.py develop 
+  - pytest ./tests
   - pep8 --ignore=E501 ./**/*py
