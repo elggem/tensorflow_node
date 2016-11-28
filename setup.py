@@ -9,6 +9,5 @@ setup(name='destin',
       author_email='mail@elggem.pub',
       license='Unlicense',
       packages=find_packages(),
-      setup_requires=['pytest-runner'],
-      tests_require=['pytest'],
+      install_requires=["colorlog"],
       zip_safe=False)
