@@ -11,8 +11,8 @@ before_install:
   - "sudo apt-get install python-opencv"
   - "sudo dpkg -L python-opencv"
 install:
-  - sudo pip install numpy matplotlib colorlog pep8 pytest
-  - sudo pip install --upgrade https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.10.0-cp27-none-linux_x86_64.whl
+  - pip install numpy matplotlib colorlog pep8 pytest protobuf
+  - pip install --upgrade https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.10.0-cp27-none-linux_x86_64.whl
 script:
   - cd $TRAVIS_BUILD_DIR
   - export PYTHONPATH=$PYTHONPATH:/usr/local/lib/python2.7/dist-packages:/usr/lib/python2.7/dist-packages
