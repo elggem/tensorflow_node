@@ -19,5 +19,5 @@ install:
     fi
 script:
   - python setup.py develop 
-  - pytest ./tests
+  - pytest
   - pep8 --ignore=E501 ./**/*py
