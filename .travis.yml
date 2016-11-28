@@ -12,6 +12,7 @@ before_install:
   - "sudo apt-get install python-opencv"
   - "sudo dpkg -L python-opencv"
 install:
+  #- sudo echo -e "[global]\ntarget=/usr/lib/python2.7/dist-packages" > /etc/pip.conf
   - pip install numpy matplotlib colorlog pep8 pytest
   # install TensorFlow from https://storage.googleapis.com/tensorflow/
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
@@ -21,7 +22,7 @@ install:
     fi
 script:
   - cd $TRAVIS_BUILD_DIR
-  - export PYTHONPATH=/usr/lib/python2.7/dist-packages:$PYTHONPATH
+  - export PYTHONPATH=$PYTHONPATH:/usr/lib/python2.7/dist-packages
   - python setup.py develop 
   - pytest destin/tests
   - pep8 --ignore=E501 ./**/*py
