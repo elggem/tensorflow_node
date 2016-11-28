@@ -17,28 +17,28 @@ with tf.Session() as sess:
     ae_bottom_a = StackedAutoEncoderNode(
         session=sess,
         name="bottom_a",
-        hidden_dims=[40,40],
+        hidden_dims=[40, 40],
         activations=["linear", "linear"]
     )
 
     ae_bottom_b = StackedAutoEncoderNode(
         session=sess,
         name="bottom_b",
-        hidden_dims=[40,40],
+        hidden_dims=[40, 40],
         activations=["linear", "linear"]
     )
 
     ae_bottom_c = StackedAutoEncoderNode(
         session=sess,
         name="bottom_c",
-        hidden_dims=[40,40],
+        hidden_dims=[40, 40],
         activations=["linear", "linear"]
     )
 
     ae_bottom_d = StackedAutoEncoderNode(
         session=sess,
         name="bottom_d",
-        hidden_dims=[40,40],
+        hidden_dims=[40, 40],
         activations=["linear", "linear"]
     )
 
