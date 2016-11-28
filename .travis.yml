@@ -5,14 +5,19 @@ language: python
 python: # Only two versions for now
   - "2.7"
   - "3.4"
+before_install:
+ - sudo apt-get update
+ - sudo apt-get install python-opencv
+ - sudo dpkg -L python-opencv
 # command to install dependencies
 install:
-  - sudo apt-get install python-opencv
   - pip install numpy
   - pip install matplotlib
   - pip install colorlog
+  - pip install pep8
+  - pip install pytest
   # install destin package
-  - pip install .
+  - pip install -e .
   # install TensorFlow from https://storage.googleapis.com/tensorflow/
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
       pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.10.0-cp27-none-linux_x86_64.whl;
@@ -20,7 +25,5 @@ install:
       pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.10.0-cp34-cp34m-linux_x86_64.whl;
     fi
 script:
-  - pip install pep8
-  - pip install pytest
   - pytest
   - pep8 --ignore=E501 ./**/*py
