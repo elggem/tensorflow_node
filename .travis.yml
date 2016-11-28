@@ -29,6 +29,7 @@ before_script:
   - make -j8
   - sudo make -j8 install
 script:
+  - cd $TRAVIS_BUILD_DIR
   - python setup.py develop 
   - pytest
   - pep8 --ignore=E501 ./**/*py
