@@ -24,6 +24,10 @@ class BaseNode(object):
     def __del__(self, input):
         return
 
+    @abc.abstractmethod
+    def initialize_graph(self):
+        return
+
     # I/O
     def register_tensor(self, new_tensor):
         self.input_tensors.append(new_tensor)
