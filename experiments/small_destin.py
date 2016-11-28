@@ -84,7 +84,7 @@ with tf.Session() as sess:
         # SummaryWriter().writer.add_summary(summary_str, iteration)
         # SummaryWriter().writer.flush()
 
-    inputlayer.feed_video(feed_callback, "data/mnist.mp4", frames=250)
+    inputlayer.feed_video(feed_callback, "data/mnist.mp4", frames=50000)
 
     image = ae_top.max_activation_recursive_summary()
     SummaryWriter().image_summary(ae_top.name, image)
