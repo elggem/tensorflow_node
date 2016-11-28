@@ -1,18 +1,11 @@
 # -*- coding: utf-8 -*-
-import os
-import sys
-
-sys.path.insert(0, os.path.dirname(os.getcwd()))
-
-from utils import SummaryWriter
-
-from input import OpenCVInputLayer
-
-from nodes import AutoEncoderNode
-from nodes import StackedAutoEncoderNode
-
 import logging
 from colorlog import ColoredFormatter
+
+from .utils import SummaryWriter
+from .input import OpenCVInputLayer
+from .nodes import AutoEncoderNode
+from .nodes import StackedAutoEncoderNode
 
 LOG_LEVEL = logging.DEBUG
 
