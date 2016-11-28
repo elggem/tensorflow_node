@@ -1,3 +1,4 @@
+from setuptools import find_packages
 from setuptools import setup
 
 setup(name='destin',
@@ -7,9 +8,5 @@ setup(name='destin',
       author='Ralf Mayet',
       author_email='mail@elggem.pub',
       license='Unlicense',
-      packages=['destin'],
-      install_requires=[
-          'tensorflow',
-          'colorlog'
-      ],
-      zip_safe=False)
+      packages=find_packages()
+    )
