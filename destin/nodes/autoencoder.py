@@ -71,13 +71,15 @@ class AutoEncoderNode(object):
         with tf.name_scope(self.scope):
             
             with tf.variable_scope(self.name):
+                # concatenate input tensors
                 input_concat = tf.concat(1, self.input_tensors)
                 input_dim = input_concat.get_shape()[1]
 
+                # deep copy to prevent losses from affecting bottom layers.
                 x = tf.get_variable("input_copy", input_concat.get_shape())
                 x_ = self.add_noise(x, self.noise_type, self.noise_amount)
 
-                # we need to make a deep copy to prevent losses from affecting bottom layers.
+                # this is an operation that needs to be executed before other ops, ensure control dependency!
                 assign = x.assign(input_concat)
 
                 encode_weights = tf.get_variable("encode_weights", (input_dim, self.hidden_dim), initializer=tf.random_normal_initializer())
@@ -87,7 +89,8 @@ class AutoEncoderNode(object):
 
             # visualization of maximum activation for all hidden neurons
             # according to: http://deeplearning.stanford.edu/wiki/index.php/Visualizing_a_Trained_Autoencoder
-            self.max_activations = tf.transpose(encode_weights / tf.reduce_sum(tf.pow(encode_weights, 2)))
+            with tf.name_scope("max_activations"):
+                self.max_activations = tf.transpose(encode_weights / tf.reduce_sum(tf.pow(encode_weights, 2)))
 
             # ensure deep copy for these operations
             with self.session.graph.control_dependencies([assign]):

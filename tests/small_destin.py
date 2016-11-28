@@ -78,10 +78,10 @@ with tf.Session() as sess:
         global iteration
         iteration += 1
         
-        for _ in xrange(50):
+        for _ in xrange(150):
             sess.run(merged_train_ops, feed_dict=feed_dict)
 
-        for _ in xrange(50):
+        for _ in xrange(150):
             sess.run(ae_top.train_op, feed_dict=feed_dict)
 
         #summary_str = merged_summary_op.eval(feed_dict=feed_dict)
@@ -89,7 +89,7 @@ with tf.Session() as sess:
         #SummaryWriter().writer.flush()
 
 
-    inputlayer.feed_video(feed_callback, "data/mnist.mp4", frames=54000)
+    inputlayer.feed_video(feed_callback, "data/mnist.mp4", frames=50000)
 
     image = ae_top.max_activation_recursive_summary()
     SummaryWriter().image_summary(ae_top.name, image)
