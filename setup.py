@@ -9,8 +9,6 @@ setup(name='destin',
       author_email='mail@elggem.pub',
       license='Unlicense',
       packages=find_packages(),
-      install_requires=[
-          'pep8',
-          'pytest'
-      ],
+      setup_requires=['pytest-runner'],
+      tests_require=['pytest'],
       zip_safe=False)
