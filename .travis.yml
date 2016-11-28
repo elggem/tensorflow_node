@@ -7,6 +7,7 @@ python: # Only two versions for now
   - "3.4"
 # command to install dependencies
 install:
+  - apt-get install python-opencv
   - pip install numpy
   - pip install matplotlib
   - pip install colorlog
@@ -22,4 +23,4 @@ script:
   - pip install pep8
   - pip install pytest
   - pytest
-  - pep8 ./**/*py
+  - pep8 --ignore=E501 ./**/*py

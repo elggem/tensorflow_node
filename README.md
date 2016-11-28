@@ -1,5 +1,7 @@
 # ae-destin
 
+[![Build Status](https://travis-ci.org/elggem/ae-destin.svg?branch=development)](https://travis-ci.org/elggem/ae-destin)
+
 This is a tensorflow based implementation of the DeSTIN perceptional framework using (stacked-)denoising autoencoders in the nodes. It aims to be a flexible implemention that can be modified and inspected during runtime on live stream data. Eventually it will be used in conjunction with the [OpenCog](https://github.com/opencog/opencog) framework for integrated Artificial General Intelligence.
 
   - *This code is under heavy development and used for research purposes, so handle with care!*
