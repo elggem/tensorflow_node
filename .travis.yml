@@ -1,0 +1,13 @@
+language: python
+matrix:
+    include:
+        - python: 2.7
+          env: TENSORFLOW="0.10.0"
+        - python: 3.5
+          env: TENSORFLOW="0.10.0"
+install:
+    - pip install .
+script:
+    - pytest
+notifications:
+    email: false
