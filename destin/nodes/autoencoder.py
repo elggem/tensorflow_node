@@ -23,7 +23,6 @@ class AutoEncoderNode(object):
                  name="ae", 
                  hidden_dim=32, 
                  activation="linear", 
-                 epochs=100, 
                  noise_type="normal", 
                  noise_amount=0.2, 
                  loss="rmse", 
@@ -43,7 +42,6 @@ class AutoEncoderNode(object):
         self.input_dim=-1
         self.hidden_dim=hidden_dim
         self.activation=activation
-        self.epochs=epochs
         self.noise_type=noise_type
         self.noise_amount=noise_amount
         self.loss=loss
@@ -158,13 +156,12 @@ class AutoEncoderNode(object):
     # visualizations
 
     def max_activation_recursive(self):
-        ## refactor make this work without loops.
+        # TODO: This is horrible, but it works. :)
         recursive_activations = []
 
         i = 0
         #1 calculate max_activation (hidden x input_dim matrix)
         for max_activation in self.max_activations.eval():
-            #log.critical("looking at hidden neuron " + str(i))
             i += 1
             #2 for each input_dim matrix split it up according to input_buffer (AE: sender.ndims[-1] - inputlayer: sender.dims_for_receiver(self))
             dimcounter = 0
@@ -173,10 +170,9 @@ class AutoEncoderNode(object):
             for input_tensor in self.input_tensors:
                 sender = input_tensor.sender
                 ndims = input_tensor.get_shape()[1].value
-                #log.critical("   looking at " + sender.name)
+
                 if (sender.__class__ == self.__class__):
                     sender_activation = max_activation[dimcounter:dimcounter+ndims]
-                    log.critical("Got slice " + str(dimcounter) +" to " + str(dimcounter+ndims) + " from max_activation.")
                     dimcounter += ndims
                     #3 for each input_buffer that is AE ask for max_activation object and multiply
                     sender_max_activations = sender.max_activation_recursive()
@@ -195,7 +191,6 @@ class AutoEncoderNode(object):
             recursive_activations.append(np.concatenate(activation))
 
         recursive_activations = np.array(recursive_activations)
-        print recursive_activations.shape
 
         return recursive_activations
 
@@ -221,8 +216,6 @@ class AutoEncoderNode(object):
         output_rows = []
         
         activation_image = np.zeros(output_shape, dtype=np.float32)
-
-        print output_shape
 
         for i in xrange(output_wh):
             output_rows.append(np.concatenate(shaped_outputs[i*output_wh:(i*output_wh)+output_wh], 0))
