@@ -8,5 +8,9 @@ setup(name='destin',
       author='Ralf Mayet',
       author_email='mail@elggem.pub',
       license='Unlicense',
-      packages=find_packages()
-    )
+      packages=find_packages(),
+      install_requires=[
+          'pep8',
+          'pytest'
+      ],
+      zip_safe=False)
