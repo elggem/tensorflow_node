@@ -7,11 +7,10 @@ language: python
 python: # Only one version for now, cv2 doesnt work with Python 2.* on travis-ci
   - "2.7"
   - "3.4"
-before_install: [
-    "sudo apt-get update",
-    "sudo apt-get install python-opencv",
-    "sudo dpkg -L python-opencv"
-  ],
+before_install:
+  - "sudo apt-get update"
+  - "sudo apt-get install python-opencv"
+  - "sudo dpkg -L python-opencv"
 install:
   - pip install numpy matplotlib colorlog pep8 pytest
   # install TensorFlow from https://storage.googleapis.com/tensorflow/
