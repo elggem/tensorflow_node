@@ -12,13 +12,13 @@ before_install:
   - "sudo apt-get install python-opencv"
   - "sudo dpkg -L python-opencv"
 install:
-  #- sudo echo -e "[global]\ntarget=/usr/lib/python2.7/dist-packages" > /etc/pip.conf
-  - pip install numpy matplotlib colorlog pep8 pytest
+  - sudo echo -e "[global]\ntarget=/usr/lib/python2.7/dist-packages" > /etc/pip.conf
+  - sudo pip install numpy matplotlib colorlog pep8 pytest
   # install TensorFlow from https://storage.googleapis.com/tensorflow/
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-      pip install --upgrade https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.10.0-cp27-none-linux_x86_64.whl;
+      sudo pip install --upgrade https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.10.0-cp27-none-linux_x86_64.whl;
     elif [[ "$TRAVIS_PYTHON_VERSION" == "3.4" ]]; then
-      pip install --upgrade https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.10.0-cp34-cp34m-linux_x86_64.whl;
+      sudo pip install --upgrade https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.10.0-cp34-cp34m-linux_x86_64.whl;
     fi
 script:
   - cd $TRAVIS_BUILD_DIR
