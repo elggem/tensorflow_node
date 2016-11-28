@@ -28,8 +28,9 @@ before_script:
   - cmake ..
   - make -j8
   - sudo make -j8 install
+  - sudo ldconfig
 script:
   - cd $TRAVIS_BUILD_DIR
   - python setup.py develop 
-  - pytest
+  - pytest destin/tests
   - pep8 --ignore=E501 ./**/*py
