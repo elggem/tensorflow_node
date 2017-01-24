@@ -18,3 +18,7 @@ script:
   - python setup.py develop 
   - pytest src/destin/tests
   - pep8 --ignore=E501 .
+# Disable daemon branch for now...
+branches:
+  except:
+    - daemon
