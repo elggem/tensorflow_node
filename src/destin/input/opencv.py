@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
+import rospy
 import numpy as np
 import cv2
 import os.path
-import logging as log
 
 from destin.input import InputLayer
 
@@ -42,7 +42,7 @@ class OpenCVInputLayer(InputLayer):
                 feed_dict = {self.name + '/input:0': np.array(self.batch)}
                 feed_callback(feed_dict)
                 self.batch = []
-                log.debug("📸 Evaluated frame %d" % framecount)
+                rospy.logdebug("📸 Evaluated frame %d" % framecount)
 
             if (framecount > 0):
                 framecount -= 1

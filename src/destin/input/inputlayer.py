@@ -4,8 +4,7 @@ import abc
 import numpy as np
 import random
 import sys
-import logging as log
-
+import rospy
 import tensorflow as tf
 
 
@@ -22,7 +21,7 @@ class InputLayer(object):
             self.name_scope = n_scope
             self.input_placeholder = tf.placeholder(dtype=tf.float32, shape=(self.batch_size, output_size[0], output_size[1], 1), name='input')
 
-        log.debug("📸 Input Layer initalized")
+        rospy.logdebug("📸 Input Layer initalized")
 
     def get_tensor_for_region(self, region):
         with tf.name_scope(self.name_scope):

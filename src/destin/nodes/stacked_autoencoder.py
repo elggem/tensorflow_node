@@ -2,7 +2,6 @@
 
 import abc
 import random
-import logging as log
 import tensorflow as tf
 
 from .autoencoder import AutoEncoderNode

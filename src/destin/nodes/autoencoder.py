@@ -8,9 +8,9 @@ AE Node
 
 import abc
 import random
-import logging as log
 import tensorflow as tf
 import numpy as np
+import rospy
 
 from destin import SummaryWriter
 
@@ -61,7 +61,7 @@ class AutoEncoderNode(object):
         return self.output_tensor
 
     def initialize_graph(self):
-        log.debug(self.name + " initializing output tensor...")
+        rospy.logdebug(self.name + " initializing output tensor...")
 
         # store all variables, so that we can later determinate what new variables there are
         temp = set(tf.all_variables())
