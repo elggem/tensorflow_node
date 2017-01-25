@@ -16,11 +16,9 @@ I've put todos and remaining tasks in the projects tab on Github. Feel free to c
 
 ## I want to run it!
 
-Clone the repo, and link package by executing the following from project root:
+Clone the repo into your catkin workspace, make it and run
 
-    pip install -e .
-
-To run execute one of the test scripts in `experiments`.
+    rosrun ros_destin daemon.py
 
 TF summaries are being written to `outputs/summaries`, and they can be inspected via this command:
 
