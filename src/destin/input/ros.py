@@ -14,28 +14,31 @@ class ROSInputLayer(InputLayer):
     Contains ROS to feed in images and video feeds to TF.
     """
 
-
-
-
     def feed_topic(self, feed_callback, topic_name):
-        rospy.logwarn("hio")
 
+        # Callback to handle individual frames coming in via ROS
         def callback(ros_data):
-            # use grayscale image
+            # Get numpy array from string
             np_arr = np.fromstring(ros_data.data, np.uint8).reshape(ros_data.width, ros_data.height, 3)
+
+            # Grayscale conversion
             channels = np_arr.swapaxes(0,2)
-            gray = (channels[0] + channels[1] + channels[2]) / 3
+            gray = (channels[0] + channels[1] + channels[2]) / 3 # could to different weights per channel here
+
+            # Resize to normalized input layer size
             resized = transform.resize(gray, [self.output_size[0], self.output_size[1]]).reshape([self.output_size[0], self.output_size[1], 1])
 
+            # Append to processing batch
             self.batch.append(resized)
 
-            # batch is full
+            # batch is full, hand off to TF
             if len(self.batch) >= self.batch_size:
                 feed_dict = {self.name + '/input:0': np.array(self.batch)}
                 self.batch = []
-                
+
                 feed_callback(feed_dict)
-                rospy.logwarn("📸 Evaluated batch")
+
+                rospy.loginfo("📸 Evaluated batch")
 
         ## ROS subscribe...
         rospy.logwarn("subscribing")
