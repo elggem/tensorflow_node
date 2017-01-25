@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
+import rospy
 import os
 import datetime
 import tensorflow as tf
 import numpy as np
 from os.path import join as pjoin
-import rospy
 
 # Singleton
 class SummaryWriter(object):

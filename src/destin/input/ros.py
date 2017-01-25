@@ -3,10 +3,10 @@
 import rospy
 import numpy as np
 import os.path
-#import cv2
 from skimage import transform
 
 from destin.input import InputLayer
+
 from sensor_msgs.msg import Image
 
 class ROSInputLayer(InputLayer):

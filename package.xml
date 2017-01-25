@@ -1,5 +1,5 @@
 <package format="2">
-  <name>destin</name>
+  <name>ros_destin</name>
   <version>0.0.1</version>
   <description>Tensorflow implementation of DeSTIN</description>
   <maintainer email="mail@elggem.pub">Ralf Mayet</maintainer>
