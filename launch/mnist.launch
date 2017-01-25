@@ -6,7 +6,7 @@
         <!-- full path to the video file -->
         <arg name="video_stream_provider" value="/Users/ralf/CogVMSharedFolder/perception/ae-destin/data/mnist.mp4" />
         <!-- throttling the querying of frames to -->
-        <arg name="fps" value="30" />
+        <arg name="fps" value="-1" />
         <!-- setting frame_id -->
         <arg name="frame_id" value="videofile_frame" />
         <!-- camera info loading, take care as it needs the "file:///" at the start , e.g.:
