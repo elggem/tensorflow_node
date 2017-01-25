@@ -1,6 +1,6 @@
 # DestinStatus.msg
 Header header
-std_msgs/String id                   # might be 'chest_camera'
-std_msgs/Bool running
-std_msgs/Bool learning
-std_msgs/String[] nodes              # list of topics for all nodes
+string id                   # might be 'chest_camera'
+bool running
+bool learning
+string[] nodes              # list of topics for all nodes
