@@ -1,6 +1,6 @@
 inputlayer: 
   type: ROSInputLayer
-  output_size: (28, 28)
+  output_size: [28, 28]
   batch_size: 250
 #  filters:
 #    - ["scale-jiggling", 1, 2, 3]

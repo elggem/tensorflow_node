@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import sys
 
 import rospy
 import tensorflow as tf
@@ -13,8 +14,11 @@ from destin import ROSInputLayer
 from std_msgs.msg import Header
 from ros_destin.msg import DestinNodeState
 
+# TODO: move this to utils
+def str_to_class(str):
+    return getattr(sys.modules[__name__], str)
+
 # This is how to get parameters:
-print rospy.get_param("inputlayer/type")
 
 # ###
 # 1) Iniitalize input layer from YAML configuration (default?)
@@ -26,7 +30,7 @@ print rospy.get_param("inputlayer/type")
 # - publish state from NODE instead of here!
 # ###
 
-"""
+
 with tf.Session() as sess:
     rospy.init_node('destin', anonymous=False, log_level=rospy.INFO)
     
@@ -39,7 +43,10 @@ with tf.Session() as sess:
         hidden_dim=40
     )
 
-    inputlayer = ROSInputLayer(output_size=(28, 28), batch_size=250)
+    # initialize input layer from yaml
+    inputlayer = str_to_class(rospy.get_param("inputlayer/type"))(**rospy.get_param("inputlayer"))
+
+    #inputlayer = ROSInputLayer(output_size=(28, 28), batch_size=250)
 
     ae.register_tensor(inputlayer.get_tensor_for_region([0, 14, 14, 14]))
 
@@ -87,4 +94,4 @@ with tf.Session() as sess:
     inputlayer.feed_topic(feed_callback, "/videofile/image_raw")
     
     rospy.spin()
-"""
+
