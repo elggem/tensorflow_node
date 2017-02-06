@@ -1,0 +1,21 @@
+inputlayer: 
+  type: ROSInputLayer
+  output_size: (28, 28)
+  batch_size: 250
+#  filters:
+#    - ["scale-jiggling", 1, 2, 3]
+
+architecture:
+  name: DestinArchitecture
+  node_params:
+    type: AutoEncoderNode
+    hidden_dim: 40
+    activation: "linear"
+  arch_params:
+    #number_of_layers: 3
+    receptive_field: (14,14)
+    stride: (7,7)
+
+publishing:
+  root: /destin
+  tensorboard: false
