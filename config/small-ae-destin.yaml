@@ -7,14 +7,12 @@ inputlayer:
 
 architecture:
   name: DestinArchitecture
+  receptive_field: [14,14]
+  stride: [7,7]
   node_params:
     type: AutoEncoderNode
     hidden_dim: 40
     activation: "linear"
-  arch_params:
-    #number_of_layers: 3
-    receptive_field: (14,14)
-    stride: (7,7)
 
 publishing:
   root: /destin

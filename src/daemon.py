@@ -21,7 +21,7 @@ def str_to_class(str):
 # This is how to get parameters:
 
 # ###
-# 1) Iniitalize input layer from YAML configuration (default?)
+# 1) XX Iniitalize input layer from YAML configuration (default?)
 # 2) Initialize network architecture using class and params specified in YAML
 # 3) Connect everything up 
 #
