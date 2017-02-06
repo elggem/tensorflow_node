@@ -13,7 +13,20 @@ from destin import ROSInputLayer
 from std_msgs.msg import Header
 from ros_destin.msg import DestinNodeState
 
+# This is how to get parameters:
+print rospy.get_param("inputlayer/type")
 
+# ###
+# 1) Iniitalize input layer from YAML configuration (default?)
+# 2) Initialize network architecture using class and params specified in YAML
+# 3) Connect everything up 
+#
+# 4) Whenever there is new frame on input layer (if it's ros, otherwise itll just run through and publish)
+#
+# - publish state from NODE instead of here!
+# ###
+
+"""
 with tf.Session() as sess:
     rospy.init_node('destin', anonymous=False, log_level=rospy.INFO)
     
@@ -74,3 +87,4 @@ with tf.Session() as sess:
     inputlayer.feed_topic(feed_callback, "/videofile/image_raw")
     
     rospy.spin()
+"""
