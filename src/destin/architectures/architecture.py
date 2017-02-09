@@ -14,4 +14,6 @@ class NetworkArchitecture(object):
         self.nodes = []
         pass
 
-
+    @abs.abstractmethod
+    def calculate_states(self, feed_dict, enable_training=False):
+        pass

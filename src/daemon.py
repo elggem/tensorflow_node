@@ -20,6 +20,10 @@ with tf.Session() as sess:
     rospy.init_node('destin', anonymous=False, log_level=rospy.INFO)
     rospy.loginfo("Destin ROS node launching")
 
+    # TODO Assertions: 
+    #   - inputlayer size and receptive field / stride fit together...
+    #   - ...?
+
     # initialize input layer from yaml
     inputlayer_type = rospy.get_param("inputlayer/type")
     inputlayer_class = str_to_class(inputlayer_type)
@@ -52,7 +56,7 @@ with tf.Session() as sess:
         global iteration
         iteration += 1
 
-        # TODO: Is it necessary to group op's here better?
+        # TODO: Group operations in array to speed up computation.
 
         # Execute train_op for entire network architecture
         for _ in xrange(50): # TODO parametrize this

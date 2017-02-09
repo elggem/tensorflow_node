@@ -13,7 +13,7 @@ def str_to_class(str):
 
 class DestinArchitecture(NetworkArchitecture):
 
-    def __init__(self, session, inputlayer, node_type, node_params, receptive_field=[14,14], stride=[14,14]):
+    def __init__(self, session, inputlayer, node_type, node_params, receptive_field=[14,14], stride=[7,7]):
         """
          Todo here:
 
@@ -27,10 +27,12 @@ class DestinArchitecture(NetworkArchitecture):
             
          - Autoencoder nodes need to publish their outputs to ROS themselves,
            after they have been evaluated.
-
         """
 
         self.nodes = []
+
+        # number of nodes on bottom layer:
+        inputlayer.output_size[0] 
 
         # Inputlayer size [28,28] : inputlayer.output_size
 
@@ -43,7 +45,6 @@ class DestinArchitecture(NetworkArchitecture):
         self.train_op = debug_ae.train_op
 
 
-        pass
 
     def create_node(self, session, node_type, node_params):
         node_class = str_to_class(node_type)
