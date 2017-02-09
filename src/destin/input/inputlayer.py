@@ -11,7 +11,7 @@ import tensorflow as tf
 class InputLayer(object):
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, batch_size=1, output_size=(28, 28), type="InputLayer", input=""):
+    def __init__(self, batch_size=1, output_size=[28, 28], input=""):
         self.name = 'inputlayer-%08x' % random.getrandbits(32)
         self.output_size = output_size
         self.input = input

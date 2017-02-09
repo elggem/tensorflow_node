@@ -1,20 +1,22 @@
 inputlayer: 
   type: OpenCVInputLayer
-  input: '/Users/ralf/CogVMSharedFolder/perception/ae-destin/data/mnist.mp4'
-  #input: '/topicname...' for ROSInputLayer
-  output_size: [28, 28]
-  batch_size: 250
-#  filters:
-#    - ["scale-jiggling", 1, 2, 3]
+  params:
+    input: '/Users/ralf/CogVMSharedFolder/perception/ae-destin/data/mnist.mp4'
+    #input: '/videofile/image_raw' for ROSInputLayer
+    output_size: [28, 28]
+    batch_size: 250
+# filters:
+#   - ["scale-jiggling", 1, 2, 3]
 
 architecture:
-  name: DestinArchitecture
-  receptive_field: [14,14]
-  stride: [7,7]
-  node_params:
-    type: AutoEncoderNode
-    hidden_dim: 40
-    activation: "linear"
+  type: DestinArchitecture
+  params:
+    node_type: AutoEncoderNode
+    node_params:
+      hidden_dim: 40
+      activation: "linear"
+    receptive_field: [14,14]
+    stride: [7,7]
 
 publishing:
   root: /destin

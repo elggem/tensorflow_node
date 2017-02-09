@@ -12,85 +12,84 @@ from destin import *
 from std_msgs.msg import Header
 from ros_destin.msg import DestinNodeState
 
-# TODO: move this to utils
 def str_to_class(str):
     return getattr(sys.modules[__name__], str)
 
-# This is how to get parameters:
-
-# ###
-# 1) XX Iniitalize input layer from YAML configuration (default?)
-# 2) Initialize network architecture using class and params specified in YAML
-# 3) Connect everything up 
-#
-# 4) Whenever there is new frame on input layer (if it's ros, otherwise itll just run through and publish)
-#
-# - publish state from NODE instead of here!
-# ###
-
-
 with tf.Session() as sess:
+    # initialize ROS node
     rospy.init_node('destin', anonymous=False, log_level=rospy.INFO)
-    
-    rospy.loginfo("ROS NODE LAUNCHING")
-    rospy.loginfo("recording summaries to " + SummaryWriter().get_summary_folder())
-    
-    ae = AutoEncoderNode(
-        session=sess,
-        name="ae",
-        hidden_dim=40
-    )
+    rospy.loginfo("Destin ROS node launching")
 
     # initialize input layer from yaml
-    inputlayer = str_to_class(rospy.get_param("inputlayer/type"))(**rospy.get_param("inputlayer"))
+    inputlayer_type = rospy.get_param("inputlayer/type")
+    inputlayer_class = str_to_class(inputlayer_type)
+    inputlayer_params = rospy.get_param("inputlayer/params")
+    inputlayer = inputlayer_class(**inputlayer_params)
 
-    #inputlayer = ROSInputLayer(output_size=(28, 28), batch_size=250)
+    # initialize network from yaml
+    architecture_type = rospy.get_param("architecture/type")
+    architecture_class = str_to_class(architecture_type)
+    architecture_params = rospy.get_param("architecture/params")
+    architecture = architecture_class(sess, inputlayer, **architecture_params)
 
-    ae.register_tensor(inputlayer.get_tensor_for_region([0, 14, 14, 14]))
+    # initialize summary writer
+    if (rospy.get_param("publishing/summaries")):
+        rospy.loginfo("recording summaries to " + SummaryWriter().get_summary_folder())
+        # initialize summary writer with graph
+        SummaryWriter().writer.add_graph(sess.graph)
+        merged_summary_op = tf.merge_all_summaries()
 
-    ae.initialize_graph()
+    # TODO: move
+    publishers = {}
 
-    # initialize summary writer with graph
-    SummaryWriter().writer.add_graph(sess.graph)
-    merged_summary_op = tf.merge_all_summaries()
+    for node in architecture.nodes:
+        publishers[node.name] = rospy.Publisher('/destin/'+node.name, DestinNodeState, queue_size=rospy.get_param("inputlayer")['batch_size'])
 
+    # main callback to evaluate architecture and publish states
     iteration = 0
-
-    pub = rospy.Publisher('/destin/'+ae.name, DestinNodeState, queue_size=rospy.get_param("inputlayer")['batch_size'])
-    #pub.publish(std_msgs.msg.String("foo"))    
 
     def feed_callback(feed_dict):
         global iteration
         iteration += 1
 
+        # Execute train_op for entire network architecture
+        for _ in xrange(50): # TODO parametrize this
+            sess.run(architecture.train_op, feed_dict=feed_dict)
 
-        for _ in xrange(50):
-            sess.run(ae.train_op, feed_dict=feed_dict)
+        # iterate over each node and stream output to ROS
+        for node in architecture.nodes:
 
-        ae_state = ae.output_tensor.eval(feed_dict=feed_dict, session=sess)
-
-        for state in ae_state:
-            ## publish state
-            msg = DestinNodeState()
-
-            msg.header = Header()
-            msg.header.stamp = rospy.Time.now() # Note you need to call rospy.init_node() before this will work
-
-            msg.id = ae.name
-            msg.type = ae.__class__.__name__
-            ##todo input_nodes, output_nodes
-
-            # TODO Here we only take the state of the first input...
-            msg.state = state
-
-            pub.publish(msg)
+            ae_state = node.output_tensor.eval(feed_dict=feed_dict, session=sess)
     
-        summary_str = merged_summary_op.eval(feed_dict=feed_dict, session=sess)
-        SummaryWriter().writer.add_summary(summary_str, iteration)
-        SummaryWriter().writer.flush()
+            for state in ae_state:
+                ## publish state
+                msg = DestinNodeState()
     
-    inputlayer.feed_to(feed_callback)
-    #inputlayer.feed_topic(feed_callback, "/videofile/image_raw")
+                msg.header = Header()
+                msg.header.stamp = rospy.Time.now() # Note you need to call rospy.init_node() before this will work
     
+                msg.id = node.name
+                msg.type = node.__class__.__name__
+                ##todo input_nodes, output_nodes
+    
+                # TODO Here we only take the state of the first input...
+                msg.state = state
+    
+                publishers[node.name].publish(msg)
+        
+        # publish summary output
+        if (rospy.get_param("publishing/summaries")):
+            summary_str = merged_summary_op.eval(feed_dict=feed_dict, session=sess)
+            SummaryWriter().writer.add_summary(summary_str, iteration)
+            SummaryWriter().writer.flush()
+    
+    # start feeding in data to callback
+    inputlayer.feed_to(feed_callback)    
+
+    # rospy spin
     rospy.spin()
+
+    # TODO: handle keyboard exception and quit gracefully
+
+
 
