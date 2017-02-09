@@ -10,27 +10,28 @@ from destin.input import InputLayer
 
 class OpenCVInputLayer(InputLayer):
     """
-    Contains OpenCV to feed in images and video feeds to TF.
+    Contains OpenCV to feed in video feeds to TF.
     """
 
-    def feed_webcam(self, feed_callback, frames=-1):
-        self.feed_video(feed_callback, filename=0, frames=frames)
+    def feed_to(self, feed_callback):
+        
+        # fixed parameters for now, could be user configurable
+        frames = -1
+        repeat = 0
 
-    def feed_video(self, feed_callback, filename, frames=-1, repeat=0):
-        if not os.path.isfile(filename) or filename == 0:
+        # check if file exists
+        if not os.path.isfile(self.input) or self.input == 0:
             raise IOError("OpenCVLayer - video file not found!")
 
-        framecount = frames
+        cap = cv2.VideoCapture(self.input)
 
-        cap = cv2.VideoCapture(filename)
-
-        while(framecount != 0):
+        while(frames != 0):
             isvalid, frame = cap.read()
 
             if (not isvalid):
                 break
 
-            res = cv2.resize(frame, self.output_size, interpolation=cv2.INTER_CUBIC)
+            res = cv2.resize(frame, (self.output_size[0], self.output_size[1]), interpolation=cv2.INTER_CUBIC)
             gray = cv2.cvtColor(res, cv2.COLOR_BGR2GRAY)
             gray = gray * 1.0 / 255
 
@@ -38,16 +39,19 @@ class OpenCVInputLayer(InputLayer):
             self.batch.append(gray.reshape([self.output_size[0], self.output_size[1], 1]))
 
             # batch is full
+
+            # Can we use TF Queue for this?
+
             if len(self.batch) >= self.batch_size:
                 feed_dict = {self.name + '/input:0': np.array(self.batch)}
                 feed_callback(feed_dict)
                 self.batch = []
-                rospy.logdebug("📸 Evaluated frame %d" % framecount)
+                print("Inputlayer: Evaluated frame %d" % frames)
 
-            if (framecount > 0):
-                framecount -= 1
+            if (frames > 0):
+                frames -= 1
 
         cap.release()
 
         if (repeat != 0):
-            self.feed_video(feed_callback, filename, frames=frames, repeat=repeat - 1)
+            self.feed_to(feed_callback)

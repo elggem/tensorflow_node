@@ -11,9 +11,10 @@ import tensorflow as tf
 class InputLayer(object):
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, batch_size=1, output_size=(28, 28), type="InputLayer"):
+    def __init__(self, batch_size=1, output_size=(28, 28), type="InputLayer", input=""):
         self.name = 'inputlayer-%08x' % random.getrandbits(32)
         self.output_size = output_size
+        self.input = input
         self.batch_size = batch_size
         self.batch = []
 
@@ -22,6 +23,10 @@ class InputLayer(object):
             self.input_placeholder = tf.placeholder(dtype=tf.float32, shape=(self.batch_size, output_size[0], output_size[1], 1), name='input')
 
         rospy.logdebug("📸 Input Layer initalized")
+
+    @abc.abstractmethod
+    def feed_to(callback):
+        pass
 
     def get_tensor_for_region(self, region):
         with tf.name_scope(self.name_scope):

@@ -14,7 +14,7 @@ class ROSInputLayer(InputLayer):
     Contains ROS to feed in images and video feeds to TF.
     """
 
-    def feed_topic(self, feed_callback, topic_name):
+    def feed_to(self, feed_callback):
 
         # Callback to handle individual frames coming in via ROS
         def callback(ros_data):
@@ -31,15 +31,19 @@ class ROSInputLayer(InputLayer):
             # Append to processing batch
             self.batch.append(resized)
 
+            rospy.loginfo("received image %i" % len(self.batch))
+
             # batch is full, hand off to TF
             if len(self.batch) >= self.batch_size:
                 feed_dict = {self.name + '/input:0': np.array(self.batch)}
                 self.batch = []
 
+                # TODO: Are we missing frames here if FPS from ROS is too fast?
                 feed_callback(feed_dict)
 
-                rospy.loginfo("📸 Evaluated batch")
+                rospy.loginfo("ROSInputLayer: Evaluated batch")
 
         ## ROS subscribe...
-        rospy.logwarn("subscribing")
+        rospy.logwarn("Subscribing to topic " + self.input)
+        topic_name = self.input
         rospy.Subscriber(topic_name, Image, callback)

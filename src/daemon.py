@@ -7,9 +7,7 @@ import rospy
 import tensorflow as tf
 import numpy as np
 
-from destin import AutoEncoderNode
-from destin import SummaryWriter
-from destin import ROSInputLayer
+from destin import *
 
 from std_msgs.msg import Header
 from ros_destin.msg import DestinNodeState
@@ -58,7 +56,7 @@ with tf.Session() as sess:
 
     iteration = 0
 
-    pub = rospy.Publisher('/destin/'+ae.name, DestinNodeState, queue_size=1)
+    pub = rospy.Publisher('/destin/'+ae.name, DestinNodeState, queue_size=rospy.get_param("inputlayer")['batch_size'])
     #pub.publish(std_msgs.msg.String("foo"))    
 
     def feed_callback(feed_dict):
@@ -71,27 +69,28 @@ with tf.Session() as sess:
 
         ae_state = ae.output_tensor.eval(feed_dict=feed_dict, session=sess)
 
-        ## publish state
-        msg = DestinNodeState()
+        for state in ae_state:
+            ## publish state
+            msg = DestinNodeState()
 
-        msg.header = Header()
-        msg.header.stamp = rospy.Time.now() # Note you need to call rospy.init_node() before this will work
+            msg.header = Header()
+            msg.header.stamp = rospy.Time.now() # Note you need to call rospy.init_node() before this will work
 
-        msg.id = ae.name
-        msg.type = ae.__class__.__name__
-        ##todo input_nodes, output_nodes
+            msg.id = ae.name
+            msg.type = ae.__class__.__name__
+            ##todo input_nodes, output_nodes
 
-        # TODO Here we only take the state of the first input... What we might want is to average over the entire batch
-        msg.state = ae_state[0]
+            # TODO Here we only take the state of the first input...
+            msg.state = state
 
-
-        pub.publish(msg)
+            pub.publish(msg)
     
         summary_str = merged_summary_op.eval(feed_dict=feed_dict, session=sess)
         SummaryWriter().writer.add_summary(summary_str, iteration)
         SummaryWriter().writer.flush()
     
-    inputlayer.feed_topic(feed_callback, "/videofile/image_raw")
+    inputlayer.feed_to(feed_callback)
+    #inputlayer.feed_topic(feed_callback, "/videofile/image_raw")
     
     rospy.spin()
 

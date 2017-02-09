@@ -1,5 +1,7 @@
 inputlayer: 
-  type: ROSInputLayer
+  type: OpenCVInputLayer
+  input: '/Users/ralf/CogVMSharedFolder/perception/ae-destin/data/mnist.mp4'
+  #input: '/topicname...' for ROSInputLayer
   output_size: [28, 28]
   batch_size: 250
 #  filters:
@@ -16,4 +18,4 @@ architecture:
 
 publishing:
   root: /destin
-  tensorboard: false
+  summaries: false

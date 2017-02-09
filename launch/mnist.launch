@@ -1,6 +1,5 @@
 <launch>
    <!-- Load MNIST video from disk to feed network -->
-   <!--
    <include file="$(find video_stream_opencv)/launch/camera.launch" >
         <arg name="camera_name" value="videofile" />
         <arg name="video_stream_provider" value="/Users/ralf/CogVMSharedFolder/perception/ae-destin/data/mnist.mp4" />
@@ -11,9 +10,10 @@
         <arg name="flip_vertical" value="false" />
         <arg name="visualize" value="false" />
    </include>
-   -->
+
    <!-- Destin Configuration -->
+   <!--
    <rosparam command="load" file="$(find ros_destin)/config/small-ae-destin.yaml" />
    <node name="destin" pkg="ros_destin" type="daemon.py" output="log" />
-
+   -->
 </launch>

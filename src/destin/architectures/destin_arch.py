@@ -5,6 +5,7 @@ import sys
 import rospy
 import tensorflow as tf
 
+from destin.architectures import NetworkArchitecture
 
 class DestinArchitecture(NetworkArchitecture):
 
