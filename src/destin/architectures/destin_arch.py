@@ -36,7 +36,7 @@ class DestinArchitecture(NetworkArchitecture):
 
         debug_ae = self.create_node(session, node_type, node_params)
 
-        debug_ae.register_tensor(inputlayer.get_tensor_for_region([0,0,1,1]))
+        debug_ae.register_tensor(inputlayer.get_tensor_for_region([0,0,28,28]))
         debug_ae.initialize_graph()
 
         self.nodes.append(debug_ae)

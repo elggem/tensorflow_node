@@ -19,5 +19,5 @@ architecture:
     stride: [7,7]
 
 publishing:
-  root: /destin
+  topic: destin
   summaries: false

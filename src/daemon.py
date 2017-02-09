@@ -39,11 +39,11 @@ with tf.Session() as sess:
         SummaryWriter().writer.add_graph(sess.graph)
         merged_summary_op = tf.merge_all_summaries()
 
-    # TODO: move
+    # initialize publishers for network
     publishers = {}
-
+    topic_name = rospy.get_param("publishing/topic")
     for node in architecture.nodes:
-        publishers[node.name] = rospy.Publisher('/destin/'+node.name, DestinNodeState, queue_size=rospy.get_param("inputlayer")['batch_size'])
+        publishers[node.name] = rospy.Publisher('/'+topic_name+'/'+node.name, DestinNodeState, queue_size=rospy.get_param("inputlayer")['batch_size'])
 
     # main callback to evaluate architecture and publish states
     iteration = 0
@@ -52,29 +52,29 @@ with tf.Session() as sess:
         global iteration
         iteration += 1
 
+        # TODO: Is it necessary to group op's here better?
+
         # Execute train_op for entire network architecture
         for _ in xrange(50): # TODO parametrize this
             sess.run(architecture.train_op, feed_dict=feed_dict)
 
-        # iterate over each node and stream output to ROS
+        # iterate over each state and stream output to ROS
+        state_ops = []
         for node in architecture.nodes:
+            ae_state = sess.run(node.get_output_tensor(), feed_dict=feed_dict)
 
-            ae_state = node.output_tensor.eval(feed_dict=feed_dict, session=sess)
-    
             for state in ae_state:
-                ## publish state
+                # formulate message
                 msg = DestinNodeState()
     
                 msg.header = Header()
-                msg.header.stamp = rospy.Time.now() # Note you need to call rospy.init_node() before this will work
-    
+                msg.header.stamp = rospy.Time.now()
                 msg.id = node.name
                 msg.type = node.__class__.__name__
-                ##todo input_nodes, output_nodes
-    
-                # TODO Here we only take the state of the first input...
                 msg.state = state
-    
+                # TODO input_nodes, output_nodes    
+
+                # publish message
                 publishers[node.name].publish(msg)
         
         # publish summary output
@@ -82,14 +82,18 @@ with tf.Session() as sess:
             summary_str = merged_summary_op.eval(feed_dict=feed_dict, session=sess)
             SummaryWriter().writer.add_summary(summary_str, iteration)
             SummaryWriter().writer.flush()
+
+        # quit gracefully
+        if (rospy.is_shutdown()):
+            # TODO: checkpoint model here
+            print("\nExiting DeSTIN ✌️ ")
+            sys.exit(0)
     
     # start feeding in data to callback
     inputlayer.feed_to(feed_callback)    
 
     # rospy spin
     rospy.spin()
-
-    # TODO: handle keyboard exception and quit gracefully
 
 
 
