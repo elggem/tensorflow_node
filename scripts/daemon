@@ -25,19 +25,19 @@ with tf.Session() as sess:
     #   - ...?
 
     # initialize input layer from yaml
-    inputlayer_type = rospy.get_param("inputlayer/type")
+    inputlayer_type = rospy.get_param("destin/inputlayer/type")
     inputlayer_class = str_to_class(inputlayer_type)
-    inputlayer_params = rospy.get_param("inputlayer/params")
+    inputlayer_params = rospy.get_param("destin/inputlayer/params")
     inputlayer = inputlayer_class(**inputlayer_params)
 
     # initialize network from yaml
-    architecture_type = rospy.get_param("architecture/type")
+    architecture_type = rospy.get_param("destin/architecture/type")
     architecture_class = str_to_class(architecture_type)
-    architecture_params = rospy.get_param("architecture/params")
+    architecture_params = rospy.get_param("destin/architecture/params")
     architecture = architecture_class(sess, inputlayer, **architecture_params)
 
     # initialize summary writer
-    if (rospy.get_param("publishing/summaries")):
+    if (rospy.get_param("destin/publishing/summaries")):
         rospy.loginfo("recording summaries to " + SummaryWriter().get_summary_folder())
         # initialize summary writer with graph
         SummaryWriter().writer.add_graph(sess.graph)
@@ -45,9 +45,10 @@ with tf.Session() as sess:
 
     # initialize publishers for network
     publishers = {}
-    topic_name = rospy.get_param("publishing/topic")
+    topic_name = rospy.get_param("destin/publishing/topic")
+    queue_size = rospy.get_param("/destin/inputlayer/params/batch_size")
     for node in architecture.nodes:
-        publishers[node.name] = rospy.Publisher('/'+topic_name+'/'+node.name, DestinNodeState, queue_size=rospy.get_param("inputlayer/params/batch_size"))
+        publishers[node.name] = rospy.Publisher('/'+topic_name+'/'+node.name, DestinNodeState, queue_size=queue_size)
 
     # main callback to evaluate architecture and publish states
     iteration = 0
@@ -63,7 +64,6 @@ with tf.Session() as sess:
             sess.run(architecture.train_op, feed_dict=feed_dict)
 
         # iterate over each state and stream output to ROS
-        state_ops = []
         for node in architecture.nodes:
             ae_state = sess.run(node.get_output_tensor(), feed_dict=feed_dict)
 
@@ -82,7 +82,7 @@ with tf.Session() as sess:
                 publishers[node.name].publish(msg)
         
         # publish summary output
-        if (rospy.get_param("publishing/summaries")):
+        if (rospy.get_param("destin/publishing/summaries")):
             summary_str = merged_summary_op.eval(feed_dict=feed_dict, session=sess)
             SummaryWriter().writer.add_summary(summary_str, iteration)
             SummaryWriter().writer.flush()

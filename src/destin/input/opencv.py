@@ -4,6 +4,7 @@ import rospy
 import numpy as np
 import cv2
 import os.path
+import rospy
 
 from destin.input import InputLayer
 
@@ -13,11 +14,16 @@ class OpenCVInputLayer(InputLayer):
     Contains OpenCV to feed in video feeds to TF.
     """
 
+    def __init__(self, batch_size=1, output_size=[28, 28], input="", number_of_frames=-1, repeat=True):
+        super(OpenCVInputLayer, self).__init__(batch_size, output_size, input)
+        self.number_of_frames = number_of_frames
+        self.repeat = repeat
+
     def feed_to(self, feed_callback):
         
-        # fixed parameters for now, could be user configurable
-        frames = -1
-        repeat = 0
+        # TODO: there should be clearer distinction here, get these params via daemon.
+        frames = rospy.get_param("/destin/inputlayer/params/number_of_frames")
+        repeat = rospy.get_param("/destin/inputlayer/params/repeat")
 
         # check if file exists
         if not os.path.isfile(self.input) or self.input == 0:
@@ -53,5 +59,5 @@ class OpenCVInputLayer(InputLayer):
 
         cap.release()
 
-        if (repeat != 0):
+        if (repeat):
             self.feed_to(feed_callback)
