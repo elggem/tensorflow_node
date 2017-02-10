@@ -31,17 +31,20 @@ class DestinArchitecture(NetworkArchitecture):
 
         # Manual initialization of 4x4 DeSTIN
 
+        node_params["name"] = "bottom_a"
         ae_bottom_a = self.create_node(session, node_type, node_params)
-        ae_bottom_b = self.create_node(session, node_type, node_params)
-        ae_bottom_c = self.create_node(session, node_type, node_params)
-        ae_bottom_d = self.create_node(session, node_type, node_params)
-        ae_top = self.create_node(session, node_type, node_params)
 
-        ae_bottom_a.name = "bottom_a"
-        ae_bottom_b.name = "bottom_b"
-        ae_bottom_c.name = "bottom_c"
-        ae_bottom_d.name = "bottom_d"
-        ae_top.name = "top"
+        node_params["name"] = "bottom_b"
+        ae_bottom_b = self.create_node(session, node_type, node_params)
+        
+        node_params["name"] = "bottom_c"
+        ae_bottom_c = self.create_node(session, node_type, node_params)
+
+        node_params["name"] = "bottom_d"
+        ae_bottom_d = self.create_node(session, node_type, node_params)
+        
+        node_params["name"] = "top"
+        ae_top = self.create_node(session, node_type, node_params)
 
         ae_bottom_a.register_tensor(inputlayer.get_tensor_for_region([0, 0, 14, 14]))
         ae_bottom_b.register_tensor(inputlayer.get_tensor_for_region([0, 14, 14, 14]))
