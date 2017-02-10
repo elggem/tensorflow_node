@@ -22,6 +22,6 @@ Clone the repo into your catkin workspace, make it and run
 
 TF summaries are being written to `outputs/summaries`, if enabled in the config file, and they can be inspected via this command:
 
-    tensorboard --logdir=runs:output/summaries --port 6006 --reload_interval 5
+    rosrun ros_destin tensorboard
 
 

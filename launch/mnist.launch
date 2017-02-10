@@ -1,5 +1,5 @@
 <launch>
    <!-- Destin Configuration -->
    <rosparam command="load" file="$(find ros_destin)/config/small-ae-destin.yaml" />
-   <node name="destin" pkg="ros_destin" type="daemon.py" output="screen" />
+   <node name="destin" pkg="ros_destin" type="daemon" output="screen" />
 </launch>

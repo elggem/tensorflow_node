@@ -18,4 +18,5 @@ architecture:
 
 publishing:
   topic: destin
-  summaries: false
+  summaries: true
+  summary_folder: "/Users/ralf/CogVMSharedFolder/destin-output"
