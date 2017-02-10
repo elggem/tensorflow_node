@@ -13,7 +13,3 @@ class NetworkArchitecture(object):
         self.train_op = tf.no_op()
         self.nodes = []
         pass
-
-    @abs.abstractmethod
-    def calculate_states(self, feed_dict, enable_training=False):
-        pass

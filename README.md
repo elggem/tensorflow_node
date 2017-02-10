@@ -18,9 +18,9 @@ I've put todos and remaining tasks in the projects tab on Github. Feel free to c
 
 Clone the repo into your catkin workspace, make it and run
 
-    rosrun ros_destin daemon.py
+    roslaunch ros_destin mnist.launch
 
-TF summaries are being written to `outputs/summaries`, and they can be inspected via this command:
+TF summaries are being written to `outputs/summaries`, if enabled in the config file, and they can be inspected via this command:
 
     tensorboard --logdir=runs:output/summaries --port 6006 --reload_interval 5
 

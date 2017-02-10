@@ -5,8 +5,6 @@ inputlayer:
     #input: '/videofile/image_raw' for ROSInputLayer
     output_size: [28, 28]
     batch_size: 250
-# filters:
-#   - ["scale-jiggling", 1, 2, 3]
 
 architecture:
   type: DestinArchitecture

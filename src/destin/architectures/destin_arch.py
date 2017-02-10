@@ -29,21 +29,34 @@ class DestinArchitecture(NetworkArchitecture):
            after they have been evaluated.
         """
 
-        self.nodes = []
+        # Manual initialization of 4x4 DeSTIN
 
-        # number of nodes on bottom layer:
-        inputlayer.output_size[0] 
+        ae_bottom_a = self.create_node(session, node_type, node_params)
+        ae_bottom_b = self.create_node(session, node_type, node_params)
+        ae_bottom_c = self.create_node(session, node_type, node_params)
+        ae_bottom_d = self.create_node(session, node_type, node_params)
+        ae_top = self.create_node(session, node_type, node_params)
 
-        # Inputlayer size [28,28] : inputlayer.output_size
+        ae_bottom_a.name = "bottom_a"
+        ae_bottom_b.name = "bottom_b"
+        ae_bottom_c.name = "bottom_c"
+        ae_bottom_d.name = "bottom_d"
+        ae_top.name = "top"
 
-        debug_ae = self.create_node(session, node_type, node_params)
+        ae_bottom_a.register_tensor(inputlayer.get_tensor_for_region([0, 0, 14, 14]))
+        ae_bottom_b.register_tensor(inputlayer.get_tensor_for_region([0, 14, 14, 14]))
+        ae_bottom_c.register_tensor(inputlayer.get_tensor_for_region([14, 0, 14, 14]))
+        ae_bottom_d.register_tensor(inputlayer.get_tensor_for_region([14, 14, 14, 14]))
 
-        debug_ae.register_tensor(inputlayer.get_tensor_for_region([0,0,28,28]))
-        debug_ae.initialize_graph()
+        ae_top.register_tensor(ae_bottom_a.get_output_tensor())
+        ae_top.register_tensor(ae_bottom_c.get_output_tensor())
+        ae_top.register_tensor(ae_bottom_b.get_output_tensor())
+        ae_top.register_tensor(ae_bottom_d.get_output_tensor())
 
-        self.nodes.append(debug_ae)
-        self.train_op = debug_ae.train_op
+        ae_top.initialize_graph()
 
+        self.nodes = [ae_bottom_a, ae_bottom_b, ae_bottom_c, ae_bottom_d, ae_top]
+        self.train_op = [ae_bottom_a.train_op, ae_bottom_b.train_op, ae_bottom_c.train_op, ae_bottom_d.train_op, ae_top.train_op, ]
 
 
     def create_node(self, session, node_type, node_params):

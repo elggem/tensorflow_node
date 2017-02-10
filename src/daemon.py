@@ -47,7 +47,7 @@ with tf.Session() as sess:
     publishers = {}
     topic_name = rospy.get_param("publishing/topic")
     for node in architecture.nodes:
-        publishers[node.name] = rospy.Publisher('/'+topic_name+'/'+node.name, DestinNodeState, queue_size=rospy.get_param("inputlayer")['batch_size'])
+        publishers[node.name] = rospy.Publisher('/'+topic_name+'/'+node.name, DestinNodeState, queue_size=rospy.get_param("inputlayer/params/batch_size"))
 
     # main callback to evaluate architecture and publish states
     iteration = 0
