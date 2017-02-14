@@ -19,6 +19,6 @@ script:
   - pytest src/tensorflow_node/tests
   - pep8 --ignore=E501 .
 # Disable daemon branch for now...
-branches:
-  except:
-    - daemon
+#branches:
+#  except:
+#    - daemon
