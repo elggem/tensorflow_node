@@ -1,8 +1,8 @@
 # tensorflow_node
 
-[![Build Status](https://travis-ci.org/elggem/tensorflow_node.svg?branch=master)](https://travis-ci.org/elggem/tensorflow_node)
+<hidden..[![Build Status](https://travis-ci.org/elggem/tensorflow_node.svg?branch=master)](https://travis-ci.org/elggem/tensorflow_node)>
 
-This is a tensorflow based framework for evaluating machine learning algorithms and streaming their states out via ROS. It aims to be a flexible implemention that can be modified and inspected during runtime on live stream data. Eventually it will be used in conjunction with the [OpenCog](https://github.com/opencog/opencog) framework for integrated Artificial General Intelligence.
+This is a tensorflow based framework for evaluating deep learning algorithms and streaming internal believe states out via ROS. It aims to be a flexible implemention that can be modified and inspected during runtime on live stream data. Eventually it will be used in conjunction with the [OpenCog](https://github.com/opencog/opencog) framework for integrated Artificial General Intelligence.
 
   - *This code is under heavy development and used for research purposes, so handle with care!*
 
