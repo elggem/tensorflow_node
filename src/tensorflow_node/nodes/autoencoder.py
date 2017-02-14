@@ -12,7 +12,7 @@ import tensorflow as tf
 import numpy as np
 import rospy
 
-from destin import SummaryWriter
+from tensorflow_node import SummaryWriter
 
 
 class AutoEncoderNode(object):

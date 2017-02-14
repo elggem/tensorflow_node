@@ -5,7 +5,7 @@ import sys
 import rospy
 import tensorflow as tf
 
-from destin.nodes import *
+from tensorflow_node.nodes import *
 
 class NetworkArchitecture(object):
     __metaclass__ = abc.ABCMeta

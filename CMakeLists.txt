@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(ros_destin)
+project(tensorflow_node)
 
 ## Find catkin macros and libraries
 find_package(catkin REQUIRED COMPONENTS
@@ -16,8 +16,8 @@ catkin_python_setup()
 ## Generate messages in the 'msg' folder
 add_message_files(
     FILES
-    DestinNodeState.msg
-    DestinStatus.msg
+    TFNodeState.msg
+    TFStatus.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -90,4 +90,4 @@ install(PROGRAMS
 #############
 
 ## Add folders to be run by python nosetests
-catkin_add_nosetests(src/destin/tests)
+catkin_add_nosetests(src/tensorflow_node/tests)

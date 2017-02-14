@@ -1,4 +1,4 @@
-# DestinStatus.msg
+# TFStatus.msg
 Header header
 string id                   # might be 'chest_camera'
 bool running

@@ -6,7 +6,7 @@ import cv2
 import os.path
 import rospy
 
-from destin.input import InputLayer
+from tensorflow_node.input import InputLayer
 
 
 class OpenCVInputLayer(InputLayer):
@@ -22,8 +22,8 @@ class OpenCVInputLayer(InputLayer):
     def feed_to(self, feed_callback):
         
         # TODO: there should be clearer distinction here, get these params via daemon.
-        frames = rospy.get_param("/destin/inputlayer/params/number_of_frames")
-        repeat = rospy.get_param("/destin/inputlayer/params/repeat")
+        frames = rospy.get_param("tensorflow_node/inputlayer/params/number_of_frames")
+        repeat = rospy.get_param("tensorflow_node/inputlayer/params/repeat")
 
         # check if file exists
         if not os.path.isfile(self.input) or self.input == 0:

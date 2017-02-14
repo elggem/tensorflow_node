@@ -6,13 +6,16 @@ import rospy
 import tensorflow as tf
 import numpy as np
 
-from destin.nodes import *
-from destin.architectures import NetworkArchitecture
+from tensorflow_node.nodes import *
+from tensorflow_node.architectures import NetworkArchitecture
 
 class DestinArchitecture(NetworkArchitecture):
 
     def __init__(self, session, inputlayer, node_type, node_params, receptive_field=[14,14], stride=[7,7]):
-
+        # TODO Assertions: 
+        #   - inputlayer size and receptive field / stride fit together...
+        #   - ...?
+    
         self.nodes = []
         self.train_op = []
 

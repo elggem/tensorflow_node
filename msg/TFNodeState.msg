@@ -1,4 +1,4 @@
-# DestinNodeState.msg
+# TFNodeState.msg
 Header header
 string id                   # might be 'ae-e239j0-1-3-2'
 string type                 # might be 'autoencoder'

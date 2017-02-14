@@ -6,9 +6,9 @@ import logging as log
 import tensorflow as tf
 import numpy as np
 
-from destin import AutoEncoderNode
-from destin import SummaryWriter
-from destin import OpenCVInputLayer
+from tensorflow_node import AutoEncoderNode
+from tensorflow_node import SummaryWriter
+from tensorflow_node import OpenCVInputLayer
 
 
 # this tests the cropping of the input layer.

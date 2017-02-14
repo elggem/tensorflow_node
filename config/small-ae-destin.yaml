@@ -1,4 +1,4 @@
-destin:
+tensorflow_node:
   inputlayer: 
     type: OpenCVInputLayer
     params:

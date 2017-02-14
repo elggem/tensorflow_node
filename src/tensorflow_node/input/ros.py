@@ -5,7 +5,7 @@ import numpy as np
 import os.path
 from skimage import transform
 
-from destin.input import InputLayer
+from tensorflow_node.input import InputLayer
 
 from sensor_msgs.msg import Image
 

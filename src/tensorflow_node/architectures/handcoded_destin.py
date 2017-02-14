@@ -5,7 +5,7 @@ import sys
 import rospy
 import tensorflow as tf
 
-from destin.architectures import NetworkArchitecture
+from tensorflow_node.architectures import NetworkArchitecture
 
 class HandcodedDestinArchitecture(NetworkArchitecture):
 
