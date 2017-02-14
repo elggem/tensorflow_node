@@ -4,6 +4,7 @@ import abc
 import sys
 import rospy
 import tensorflow as tf
+import numpy as np
 
 from destin.nodes import *
 from destin.architectures import NetworkArchitecture
@@ -11,23 +12,42 @@ from destin.architectures import NetworkArchitecture
 class DestinArchitecture(NetworkArchitecture):
 
     def __init__(self, session, inputlayer, node_type, node_params, receptive_field=[14,14], stride=[7,7]):
-        """
-         Todo here:
-
-         1) create first layer nodes according to inputlayer output size, receptive field and stride
-         2) append them to an array in the right order to be consumed for the second layer.. 
-         3) ...do until theres only one node on top.
-
-         - sess.run will evaluate only the needed computations, so there should be no
-           redudant calcalations if we run all output_tensors, get the values, and run the training ops!
-            http://stackoverflow.com/questions/34010987/does-tensorflow-rerun-for-each-eval-call
-            
-         - Autoencoder nodes need to publish their outputs to ROS themselves,
-           after they have been evaluated.
-        """
 
         self.nodes = []
         self.train_op = []
+
+        print "creating DeSTIN network..."
+
+        def destin_node(level, number_of_layers, x_pos=0.0, y_pos=0.0):
+            print " creating node @ level %i" % level
+            node = self.create_node(session, node_type, node_params)
+
+            if (level<number_of_layers):
+                node.register_tensor(destin_node(level+1, number_of_layers, x_pos, y_pos))
+                node.register_tensor(destin_node(level+1, number_of_layers, x_pos+stride[0], y_pos))
+                node.register_tensor(destin_node(level+1, number_of_layers, x_pos, y_pos+stride[1]))
+                node.register_tensor(destin_node(level+1, number_of_layers, x_pos+stride[0], y_pos+stride[1]))
+            else:
+                region = [int(np.round(x_pos)),int(np.round(y_pos)),receptive_field[0],receptive_field[1]]
+                print "  registering region @ %i %i" % (x_pos, y_pos)
+                node.register_tensor(inputlayer.get_tensor_for_region(region))
+
+            node.initialize_graph()
+            
+            self.nodes.append(node)
+            self.train_op.append(node.train_op)
+            
+            return node.get_output_tensor()
+
+        # calculate number of levels needed...
+        nr_of_layers = np.floor(np.log(np.power(inputlayer.output_size[0]/stride[0],2))/np.log(4))
+        
+        # create network
+        destin_node(0, nr_of_layers)
+        
+        
+        
+
 
 
 
