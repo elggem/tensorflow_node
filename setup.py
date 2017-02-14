@@ -1,13 +1,9 @@
-from setuptools import find_packages
-from setuptools import setup
+from distutils.core import setup
+from catkin_pkg.python_setup import generate_distutils_setup
 
-setup(name='destin',
-      version='0.1',
-      description='Tensorflow implementation of DeSTIN',
-      url='http://github.com/elggem/ae-destin',
-      author='Ralf Mayet',
-      author_email='mail@elggem.pub',
-      license='Unlicense',
-      packages=find_packages(),
-      install_requires=["colorlog"],
-      zip_safe=False)
+d = generate_distutils_setup(
+    packages=['tensorflow_node'],
+    package_dir={'': 'src'}
+)
+
+setup(**d)

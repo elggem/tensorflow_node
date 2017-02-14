@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 
+import rospy
 import os
 import datetime
 import tensorflow as tf
 import numpy as np
 from os.path import join as pjoin
-import logging as log
 
+import rospy
 
 # Singleton
 class SummaryWriter(object):
@@ -19,16 +20,14 @@ class SummaryWriter(object):
 
     def __init__(self):
         if not hasattr(self, 'writer'):
-            log.debug("📊 initializing summary writer.")
+            rospy.logdebug("initializing summary writer.")
             now = datetime.datetime.now()
             self.directory = self.get_output_folder('summaries') + now.strftime("/%Y-%m-%d-%s")
             self.writer = tf.train.SummaryWriter(self.directory)
 
-            # log to file
-            log.getLogger().addHandler(log.FileHandler(self.directory + "/log", mode='a'))
-
     def get_output_folder(self, path):
-        output_path = pjoin(os.getcwd(), 'output', path)
+        #output_path = pjoin(os.getcwd(), 'output', path)
+        output_path = rospy.get_param("tensorflow_node/publishing/summary_folder")
         if not os.path.exists(output_path):
             os.makedirs(output_path)
         return output_path
@@ -80,5 +79,5 @@ class SummaryWriter(object):
         SummaryWriter().writer.add_summary(image_summary_str, 0)
         SummaryWriter().writer.flush()
 
-        log.info("📈 " + tag + " image plotted.")
+        rospy.loginfo("📈 " + tag + " image plotted.")
         pass

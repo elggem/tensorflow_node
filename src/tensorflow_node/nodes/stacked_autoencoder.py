@@ -2,7 +2,6 @@
 
 import abc
 import random
-import logging as log
 import tensorflow as tf
 
 from .autoencoder import AutoEncoderNode
@@ -22,7 +21,7 @@ class StackedAutoEncoderNode(object):
                  loss="rmse",
                  lr=0.007):
 
-        self.name = name + '-%08x' % random.getrandbits(32)
+        self.name = name + '_%08x' % random.getrandbits(32)
         self.session = session
 
         # this list is populated with register tensor function

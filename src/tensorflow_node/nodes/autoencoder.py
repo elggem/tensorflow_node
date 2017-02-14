@@ -8,11 +8,11 @@ AE Node
 
 import abc
 import random
-import logging as log
 import tensorflow as tf
 import numpy as np
+import rospy
 
-from destin import SummaryWriter
+from tensorflow_node import SummaryWriter
 
 
 class AutoEncoderNode(object):
@@ -29,7 +29,11 @@ class AutoEncoderNode(object):
                  loss="rmse",
                  lr=0.007):
 
-        self.name = name + '-%08x' % random.getrandbits(32)
+        self.name = name
+        
+        if self.name=="ae":
+            self.name = 'ae_%08x' % random.getrandbits(32)
+        
         self.session = session
 
         # this list is populated with register tensor function
@@ -61,7 +65,7 @@ class AutoEncoderNode(object):
         return self.output_tensor
 
     def initialize_graph(self):
-        log.debug(self.name + " initializing output tensor...")
+        rospy.logdebug(self.name + " initializing output tensor...")
 
         # store all variables, so that we can later determinate what new variables there are
         temp = set(tf.all_variables())

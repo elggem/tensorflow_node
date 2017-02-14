@@ -1,0 +1,25 @@
+tensorflow_node:
+  inputlayer: 
+    type: OpenCVInputLayer
+    params:
+      input: '/Users/ralf/CogVMSharedFolder/perception/ae-destin/data/mnist.mp4'
+      number_of_frames: -1 # read all
+      repeat: true
+      #input: '/videofile/image_raw' for ROSInputLayer
+      output_size: [28, 28]
+      batch_size: 250
+  
+  architecture:
+    type: DestinArchitecture
+    params:
+      node_type: AutoEncoderNode
+      node_params:
+        hidden_dim: 40
+        activation: "linear"
+      receptive_field: [14,14]
+      stride: [7,7]
+  
+  publishing:
+    topic: destin
+    summaries: true
+    summary_folder: "/Users/ralf/CogVMSharedFolder/destin-output"

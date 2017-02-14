@@ -1,0 +1,5 @@
+<launch>
+   <!-- Destin Configuration -->
+   <rosparam command="load" file="$(find ros_destin)/config/small-ae-destin.yaml" />
+   <node name="tf_node" pkg="tensorflow_node" type="daemon" output="screen" />
+</launch>

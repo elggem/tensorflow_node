@@ -1,0 +1,13 @@
+<launch>
+   <!-- Load MNIST video from disk to feed network -->
+   <include file="$(find video_stream_opencv)/launch/camera.launch" >
+        <arg name="camera_name" value="videofile" />
+        <arg name="video_stream_provider" value="/Users/ralf/CogVMSharedFolder/perception/ae-destin/data/mnist.mp4" />
+        <arg name="fps" value="-1" />
+        <arg name="frame_id" value="videofile_frame" />
+        <arg name="camera_info_url" value="" />
+        <arg name="flip_horizontal" value="false" />
+        <arg name="flip_vertical" value="false" />
+        <arg name="visualize" value="false" />
+   </include>
+</launch>

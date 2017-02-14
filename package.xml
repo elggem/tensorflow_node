@@ -1,0 +1,18 @@
+<package format="2">
+  <name>tensorflow_node</name>
+  <version>0.0.1</version>
+  <description>Persistent Tensorflow node</description>
+  <maintainer email="mail@elggem.pub">Ralf Mayet</maintainer>
+  <license>Unlicense</license>
+
+  <url>https://github.com/elggem/ae-destin</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>std_msgs</depend>
+
+  <build_depend>message_generation</build_depend>
+
+  <exec_depend>message_runtime</exec_depend>
+  <exec_depend>rospy</exec_depend>
+</package>

@@ -1,0 +1,99 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import sys
+
+import rospy
+import tensorflow as tf
+import numpy as np
+
+from tensorflow_node import *
+
+from std_msgs.msg import Header
+from tensorflow_node.msg import TFNodeState
+
+def str_to_class(str):
+    return getattr(sys.modules[__name__], str)
+
+with tf.Session() as sess:
+    # initialize ROS node
+    rospy.init_node('tensorflow_daemon', anonymous=False, log_level=rospy.INFO)
+    rospy.loginfo("Tensorflow daemon ROS node launching")
+
+    config_prefix = "tensorflow_node"
+
+    # initialize input layer from yaml
+    inputlayer_type = rospy.get_param(config_prefix+"/inputlayer/type")
+    inputlayer_class = str_to_class(inputlayer_type)
+    inputlayer_params = rospy.get_param(config_prefix+"/inputlayer/params")
+    inputlayer = inputlayer_class(**inputlayer_params)
+
+    # initialize network from yaml
+    architecture_type = rospy.get_param(config_prefix+"/architecture/type")
+    architecture_class = str_to_class(architecture_type)
+    architecture_params = rospy.get_param(config_prefix+"/architecture/params")
+    architecture = architecture_class(sess, inputlayer, **architecture_params)
+
+    # initialize summary writer
+    if (rospy.get_param(config_prefix+"/publishing/summaries")):
+        rospy.loginfo("recording summaries to " + SummaryWriter().get_summary_folder())
+        # initialize summary writer with graph
+        SummaryWriter().writer.add_graph(sess.graph)
+        merged_summary_op = tf.merge_all_summaries()
+
+    # initialize publishers for network
+    publishers = {}
+    topic_name = rospy.get_param(config_prefix+"/publishing/topic")
+    queue_size = rospy.get_param(config_prefix+"/inputlayer/params/batch_size")
+    for node in architecture.nodes:
+        publishers[node.name] = rospy.Publisher('/'+topic_name+'/'+node.name, TFNodeState, queue_size=queue_size)
+
+    # main callback to evaluate architecture and publish states
+    iteration = 0
+
+    def feed_callback(feed_dict):
+        global iteration
+        iteration += 1
+
+        # Execute train_op for entire network architecture
+        for _ in xrange(50): # TODO parametrize this
+            sess.run(architecture.train_op, feed_dict=feed_dict)
+
+        # iterate over each state and stream output to ROS
+        for node in architecture.nodes:
+            ae_state = sess.run(node.get_output_tensor(), feed_dict=feed_dict)
+
+            for state in ae_state:
+                # formulate message
+                msg = TFNodeState()
+    
+                msg.header = Header()
+                msg.header.stamp = rospy.Time.now()
+                msg.id = node.name
+                msg.type = node.__class__.__name__
+                msg.state = state
+                # TODO input_nodes, output_nodes    
+
+                # publish message
+                publishers[node.name].publish(msg)
+        
+        # publish summary output
+        if (rospy.get_param(config_prefix+"/publishing/summaries")):
+            summary_str = merged_summary_op.eval(feed_dict=feed_dict, session=sess)
+            SummaryWriter().writer.add_summary(summary_str, iteration)
+            SummaryWriter().writer.flush()
+
+        # quit gracefully
+        if (rospy.is_shutdown()):
+            # TODO: checkpoint model here
+            print("\nExiting DeSTIN ✌️ ")
+            sys.exit(0)
+    
+    # start feeding in data to callback
+    inputlayer.feed_to(feed_callback)    
+
+    # rospy spin
+    rospy.spin()
+
+
+

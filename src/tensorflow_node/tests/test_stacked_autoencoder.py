@@ -6,9 +6,9 @@ import logging as log
 import tensorflow as tf
 import numpy as np
 
-from destin import StackedAutoEncoderNode
-from destin import SummaryWriter
-from destin import OpenCVInputLayer
+from tensorflow_node import StackedAutoEncoderNode
+from tensorflow_node import SummaryWriter
+from tensorflow_node import OpenCVInputLayer
 
 
 # this tests very basic functionality of the stacked autoencoder

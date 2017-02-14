@@ -16,5 +16,9 @@ install:
   - pip install --upgrade https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.10.0-cp27-none-linux_x86_64.whl
 script:
   - python setup.py develop 
-  - pytest destin/tests
+  - pytest src/destin/tests
   - pep8 --ignore=E501 .
+# Disable daemon branch for now...
+branches:
+  except:
+    - daemon
