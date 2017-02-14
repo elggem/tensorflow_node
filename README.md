@@ -1,6 +1,6 @@
 # tensorflow_node
 
-[![Build Status](https://travis-ci.org/elggem/ae-destin.svg?branch=master)](https://travis-ci.org/elggem/ae-destin)
+[![Build Status](https://travis-ci.org/elggem/tensorflow_node.svg?branch=master)](https://travis-ci.org/elggem/ae-destin)
 
 This is a tensorflow based framework for evaluating machine learning algorithms and streaming their states out via ROS. It aims to be a flexible implemention that can be modified and inspected during runtime on live stream data. Eventually it will be used in conjunction with the [OpenCog](https://github.com/opencog/opencog) framework for integrated Artificial General Intelligence.
 
@@ -8,7 +8,7 @@ This is a tensorflow based framework for evaluating machine learning algorithms 
 
 ## Documentation
 
-You can find documentation on the [wiki](https://github.com/elggem/ae-destin/wiki) tab. There are references for the network architecture and some high-level descriptions on how it works.
+You can find documentation on the [wiki](https://github.com/elggem/tensorflow_node/wiki) tab. There are references for the network architecture and some high-level descriptions on how it works.
 
 ## Participate
 
