@@ -9,7 +9,7 @@ from os.path import join as pjoin
 
 import rospy
 
-# Singleton
+
 class SummaryWriter(object):
     _instance = None
 
@@ -26,7 +26,7 @@ class SummaryWriter(object):
             self.writer = tf.train.SummaryWriter(self.directory)
 
     def get_output_folder(self, path):
-        #output_path = pjoin(os.getcwd(), 'output', path)
+        # output_path = pjoin(os.getcwd(), 'output', path)
         output_path = rospy.get_param("tensorflow_node/publishing/summary_folder")
         if not os.path.exists(output_path):
             os.makedirs(output_path)

@@ -6,8 +6,8 @@ import os.path
 from skimage import transform
 
 from tensorflow_node.input import InputLayer
-
 from sensor_msgs.msg import Image
+
 
 class ROSInputLayer(InputLayer):
     """
@@ -22,8 +22,8 @@ class ROSInputLayer(InputLayer):
             np_arr = np.fromstring(ros_data.data, np.uint8).reshape(ros_data.width, ros_data.height, 3)
 
             # Grayscale conversion
-            channels = np_arr.swapaxes(0,2)
-            gray = (channels[0] + channels[1] + channels[2]) / 3 # could to different weights per channel here
+            channels = np_arr.swapaxes(0, 2)
+            gray = (channels[0] + channels[1] + channels[2]) / 3  # could to different weights per channel here
 
             # Resize to normalized input layer size
             resized = transform.resize(gray, [self.output_size[0], self.output_size[1]]).reshape([self.output_size[0], self.output_size[1], 1])
@@ -43,7 +43,7 @@ class ROSInputLayer(InputLayer):
 
                 rospy.loginfo("ROSInputLayer: Evaluated batch")
 
-        ## ROS subscribe...
+        # ROS subscribe...
         rospy.logwarn("Subscribing to topic " + self.input)
         topic_name = self.input
         rospy.Subscriber(topic_name, Image, callback)

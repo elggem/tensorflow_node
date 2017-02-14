@@ -15,10 +15,10 @@ install:
   - pip install numpy matplotlib colorlog pep8 pytest protobuf catkin_pkg
   - pip install --upgrade https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.10.0-cp27-none-linux_x86_64.whl
 script:
-  - python setup.py develop 
+  - python setup.py install 
   - pytest src/tensorflow_node/tests
   - pep8 --ignore=E501 .
 # Disable daemon branch for now...
-#branches:
-#  except:
-#    - daemon
+branches:
+  except:
+    - development

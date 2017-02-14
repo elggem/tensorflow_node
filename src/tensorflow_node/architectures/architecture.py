@@ -7,6 +7,7 @@ import tensorflow as tf
 
 from tensorflow_node.nodes import *
 
+
 class NetworkArchitecture(object):
     __metaclass__ = abc.ABCMeta
 
@@ -14,7 +15,6 @@ class NetworkArchitecture(object):
         self.train_op = tf.no_op()
         self.nodes = []
         pass
-
 
     def str_to_class(self, str):
         return getattr(sys.modules[__name__], str)

@@ -30,10 +30,10 @@ class AutoEncoderNode(object):
                  lr=0.007):
 
         self.name = name
-        
-        if self.name=="ae":
+
+        if self.name == "ae":
             self.name = 'ae_%08x' % random.getrandbits(32)
-        
+
         self.session = session
 
         # this list is populated with register tensor function

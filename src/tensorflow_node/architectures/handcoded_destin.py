@@ -7,6 +7,7 @@ import tensorflow as tf
 
 from tensorflow_node.architectures import NetworkArchitecture
 
+
 class HandcodedDestinArchitecture(NetworkArchitecture):
 
     def __init__(self, session, inputlayer, node_type, node_params):
@@ -17,13 +18,13 @@ class HandcodedDestinArchitecture(NetworkArchitecture):
 
         node_params["name"] = "bottom_b"
         ae_bottom_b = self.create_node(session, node_type, node_params)
-        
+
         node_params["name"] = "bottom_c"
         ae_bottom_c = self.create_node(session, node_type, node_params)
 
         node_params["name"] = "bottom_d"
         ae_bottom_d = self.create_node(session, node_type, node_params)
-        
+
         node_params["name"] = "top"
         ae_top = self.create_node(session, node_type, node_params)
 
@@ -41,5 +42,3 @@ class HandcodedDestinArchitecture(NetworkArchitecture):
 
         self.nodes = [ae_bottom_a, ae_bottom_b, ae_bottom_c, ae_bottom_d, ae_top]
         self.train_op = [ae_bottom_a.train_op, ae_bottom_b.train_op, ae_bottom_c.train_op, ae_bottom_d.train_op, ae_top.train_op]
-
-

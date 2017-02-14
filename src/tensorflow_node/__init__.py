@@ -5,5 +5,3 @@ from .input import ROSInputLayer
 from .nodes import AutoEncoderNode
 from .nodes import StackedAutoEncoderNode
 from .architectures import *
-
-#from ..destin.msg import DestinNodeState

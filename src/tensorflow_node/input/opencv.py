@@ -20,7 +20,7 @@ class OpenCVInputLayer(InputLayer):
         self.repeat = repeat
 
     def feed_to(self, feed_callback):
-        
+
         # TODO: there should be clearer distinction here, get these params via daemon.
         frames = rospy.get_param("tensorflow_node/inputlayer/params/number_of_frames")
         repeat = rospy.get_param("tensorflow_node/inputlayer/params/repeat")
