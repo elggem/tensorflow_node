@@ -27,7 +27,7 @@ class SummaryWriter(object):
 
     def get_output_folder(self, path):
         #output_path = pjoin(os.getcwd(), 'output', path)
-        output_path = rospy.get_param("publishing/summary_folder")
+        output_path = rospy.get_param("destin/publishing/summary_folder")
         if not os.path.exists(output_path):
             os.makedirs(output_path)
         return output_path
