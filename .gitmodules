@@ -1,0 +1,3 @@
+[submodule "src/InfoGAN"]
+	path = src/InfoGAN
+	url = https://github.com/openai/InfoGAN.git
