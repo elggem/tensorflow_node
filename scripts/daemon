@@ -59,7 +59,7 @@ with tf.Session() as sess:
         iteration += 1
 
         # Execute train_op for entire network architecture
-        for _ in xrange(50): # TODO parametrize this
+        for _ in xrange(1): # TODO parametrize this epochs
             sess.run(architecture.train_op, feed_dict=feed_dict)
 
         # iterate over each state and stream output to ROS

@@ -64,12 +64,12 @@ class RegularizedGANNode(object):
 
         # concatenate input tensors
         input_concat = tf.concat(1, self.input_tensors)
-        input_dim = input_concat.get_shape()[1]
-        image_shape = (np.sqrt(input_dim.value), np.sqrt(input_dim.value), 1) #, 1?
-        batch_size = input_concat.get_shape()[0] # this right?
+        input_dim = input_concat.get_shape()[1].value
+        image_shape = (int(np.sqrt(input_dim)), int(np.sqrt(input_dim)), 1)
+        batch_size = input_concat.get_shape()[0].value 
 
         # deep copy to prevent losses from affecting bottom layers.
-        # TODO!!!
+        # TODO!!! is this necessary?
         #x = tf.get_variable("input_copy", input_concat.get_shape())
         #x_ = self.add_noise(x, self.noise_type, self.noise_amount)
 
@@ -90,9 +90,15 @@ class RegularizedGANNode(object):
         )
         
         algo.input_tensor = input_concat
+        algo.init_opt()
         
-        self.output_tensor = model.discriminate(input_concat)[2]
+        self.output_tensor = model.discriminate(input_concat)[1] # TODO: which
         self.train_op = algo.generator_trainer
+                
+        ## TODO: only new variables.
+        init = tf.initialize_all_variables()
+        self.session.run(init)
+        
         
     # I/O
     def register_tensor(self, new_tensor):

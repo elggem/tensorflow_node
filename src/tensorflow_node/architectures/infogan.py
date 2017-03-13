@@ -14,10 +14,11 @@ class InfoGANArchitecture(NetworkArchitecture):
         # Manual initialization of InfoGAN
         ##...
         infogan_node = RegularizedGANNode(
-            session
+            session,
+            name="gan_node"
         )
         
-        infogan_node.register_tensor(inputlayer.get_tensor_for_region([0, 0, 14, 14]))
+        infogan_node.register_tensor(inputlayer.get_tensor_for_region([0, 0, 16, 16]))
         
         infogan_node.initialize_graph()
         
