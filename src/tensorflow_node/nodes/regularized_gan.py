@@ -3,6 +3,11 @@
 import abc
 import random
 import tensorflow as tf
+import numpy as np
+
+from infogan.models.regularized_gan import RegularizedGAN
+from infogan.algos.infogan_trainer import InfoGANTrainer
+from infogan.misc.distributions import Uniform, Categorical, Gaussian, MeanBernoulli
 
 
 class RegularizedGANNode(object):
@@ -11,10 +16,42 @@ class RegularizedGANNode(object):
     # Initialization
     def __init__(self,
                  session,
-                 name="gan"):
-        
+                 name="gan",
+                 latent_spec=[
+                     (Uniform(62), False),
+                     (Categorical(10), True),
+                     (Uniform(1, fix_std=True), True),
+                     (Uniform(1, fix_std=True), True)
+                 ],
+                 info_reg_coeff=1.0,
+                 generator_learning_rate=1e-3,
+                 discriminator_learning_rate=2e-4):
+
+        self.name = name
+
+        if self.name == "gan":
+            self.name = 'gan_%08x' % random.getrandbits(32)
+
+        self.session = session
+
+        # this list is populated with register tensor function
+        self.input_tensors = []
+        # these are initialized upon first call to output_tensor
         self.output_tensor = None
-                 
+        self.train_op = None
+
+        # set parameters (Move those to init function params?)
+        self.iteration = 0
+        self.input_dim = -1
+        self.latent_spec = latent_spec
+        self.info_reg_coeff = info_reg_coeff
+        self.generator_learning_rate = generator_learning_rate
+        self.discriminator_learning_rate = discriminator_learning_rate
+
+        # generate reusable scope
+        with tf.name_scope(self.name) as scope:
+            self.scope = scope
+
         return
 
     def get_output_tensor(self):
@@ -24,11 +61,43 @@ class RegularizedGANNode(object):
         return self.output_tensor
 
     def initialize_graph(self):
-        pass
 
+        # concatenate input tensors
+        input_concat = tf.concat(1, self.input_tensors)
+        input_dim = input_concat.get_shape()[1]
+        image_shape = (np.sqrt(input_dim.value), np.sqrt(input_dim.value), 1) #, 1?
+        batch_size = input_concat.get_shape()[0] # this right?
+
+        # deep copy to prevent losses from affecting bottom layers.
+        # TODO!!!
+        #x = tf.get_variable("input_copy", input_concat.get_shape())
+        #x_ = self.add_noise(x, self.noise_type, self.noise_amount)
+
+        model = RegularizedGAN(
+            output_dist=MeanBernoulli(input_dim),
+            latent_spec=self.latent_spec,
+            batch_size=batch_size,
+            image_shape=image_shape,
+            network_type="mnist",
+        )
+
+        algo = InfoGANTrainer(
+            model=model,
+            batch_size=batch_size,
+            info_reg_coeff=self.info_reg_coeff,
+            generator_learning_rate=self.generator_learning_rate,
+            discriminator_learning_rate=self.discriminator_learning_rate,
+        )
+        
+        algo.input_tensor = input_concat
+        
+        self.output_tensor = model.discriminate(input_concat)[2]
+        self.train_op = algo.generator_trainer
+        
     # I/O
     def register_tensor(self, new_tensor):
         # TODO: check if graph is initialized and modify for new input_dim
+        self.input_tensors.append(new_tensor)
         return
 
     def deregister_tensor(self, tensor):

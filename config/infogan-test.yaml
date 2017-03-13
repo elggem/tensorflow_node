@@ -1,0 +1,17 @@
+tensorflow_node:
+  inputlayer: 
+    type: OpenCVInputLayer
+    params:
+      input: '/Users/ralf/CogVMSharedFolder/perception/catkin_ws/src/tensorflow_node/data/mnist.mp4'
+      number_of_frames: 100 # read all
+      repeat: false
+      output_size: [28, 28]
+      batch_size: 128
+  
+  architecture:
+    type: InfoGANArchitecture
+    
+  publishing:
+    topic: infogan
+    summaries: true
+    summary_folder: "/Users/ralf/CogVMSharedFolder/destin-output"
