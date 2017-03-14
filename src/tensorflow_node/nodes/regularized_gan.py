@@ -61,6 +61,8 @@ class RegularizedGANNode(object):
         return self.output_tensor
 
     def initialize_graph(self):
+        # store all variables, so that we can later determinate what new variables there are
+        temp = set(tf.all_variables())
 
         with tf.name_scope(self.scope):
             with tf.variable_scope(self.name):
@@ -78,24 +80,24 @@ class RegularizedGANNode(object):
                     network_type="mnist",
                 )
 
-            algo = InfoGANTrainer(
-                name=self.name,
-                model=model,
-                batch_size=batch_size,
-                info_reg_coeff=self.info_reg_coeff,
-                generator_learning_rate=self.generator_learning_rate,
-                discriminator_learning_rate=self.discriminator_learning_rate,
-            )
+                algo = InfoGANTrainer(
+                    name=self.name,
+                    model=model,
+                    batch_size=batch_size,
+                    info_reg_coeff=self.info_reg_coeff,
+                    generator_learning_rate=self.generator_learning_rate,
+                    discriminator_learning_rate=self.discriminator_learning_rate,
+                )
         
-            algo.input_tensor = input_concat
-            algo.init_opt()
+                algo.input_tensor = input_concat
+                algo.init_opt()
         
-            self.output_tensor = model.discriminate(input_concat)[1] # TODO: which
-            self.train_op = algo.generator_trainer
+                # set output tensors
+                self.output_tensor = model.discriminate(input_concat)[1] # TODO: which
+                self.train_op = algo.generator_trainer
 
-            ## TODO: only new variables.
-            init = tf.initialize_all_variables()
-            self.session.run(init)
+                ## initialize new variables
+                self.session.run(tf.initialize_variables(set(tf.all_variables()) - temp))
         
     # I/O
     def register_tensor(self, new_tensor):

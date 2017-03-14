@@ -13,14 +13,21 @@ class InfoGANArchitecture(NetworkArchitecture):
     def __init__(self, session, inputlayer):
         # Manual initialization of InfoGAN
         ##...
-        infogan_node = RegularizedGANNode(
+        infogan_a = RegularizedGANNode(
             session,
-            name="gan_node"
+            name="gan_a"
         )
         
-        infogan_node.register_tensor(inputlayer.get_tensor_for_region([0, 0, 16, 16]))
+        infogan_b = RegularizedGANNode(
+            session,
+            name="gan_b"
+        )
         
-        infogan_node.initialize_graph()
+        infogan_a.register_tensor(inputlayer.get_tensor_for_region([0, 0, 8, 8]))
+        infogan_b.register_tensor(inputlayer.get_tensor_for_region([8, 8, 8, 8]))
         
-        self.nodes = [infogan_node]
-        self.train_op = [infogan_node.train_op]
+        infogan_a.initialize_graph()
+        infogan_b.initialize_graph()
+        
+        self.nodes = [infogan_a, infogan_b]
+        self.train_op = [infogan_a.train_op, infogan_b.train_op]
