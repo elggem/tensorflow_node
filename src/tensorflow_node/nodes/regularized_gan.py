@@ -62,43 +62,40 @@ class RegularizedGANNode(object):
 
     def initialize_graph(self):
 
-        # concatenate input tensors
-        input_concat = tf.concat(1, self.input_tensors)
-        input_dim = input_concat.get_shape()[1].value
-        image_shape = (int(np.sqrt(input_dim)), int(np.sqrt(input_dim)), 1)
-        batch_size = input_concat.get_shape()[0].value 
+        with tf.name_scope(self.scope):
+            with tf.variable_scope(self.name):
+                # concatenate input tensors
+                input_concat = tf.concat(1, self.input_tensors)
+                input_dim = input_concat.get_shape()[1].value
+                image_shape = (int(np.sqrt(input_dim)), int(np.sqrt(input_dim)), 1)
+                batch_size = input_concat.get_shape()[0].value 
 
-        # deep copy to prevent losses from affecting bottom layers.
-        # TODO!!! is this necessary?
-        #x = tf.get_variable("input_copy", input_concat.get_shape())
-        #x_ = self.add_noise(x, self.noise_type, self.noise_amount)
+                model = RegularizedGAN(
+                    output_dist=MeanBernoulli(input_dim),
+                    latent_spec=self.latent_spec,
+                    batch_size=batch_size,
+                    image_shape=image_shape,
+                    network_type="mnist",
+                )
 
-        model = RegularizedGAN(
-            output_dist=MeanBernoulli(input_dim),
-            latent_spec=self.latent_spec,
-            batch_size=batch_size,
-            image_shape=image_shape,
-            network_type="mnist",
-        )
+            algo = InfoGANTrainer(
+                name=self.name,
+                model=model,
+                batch_size=batch_size,
+                info_reg_coeff=self.info_reg_coeff,
+                generator_learning_rate=self.generator_learning_rate,
+                discriminator_learning_rate=self.discriminator_learning_rate,
+            )
+        
+            algo.input_tensor = input_concat
+            algo.init_opt()
+        
+            self.output_tensor = model.discriminate(input_concat)[1] # TODO: which
+            self.train_op = algo.generator_trainer
 
-        algo = InfoGANTrainer(
-            model=model,
-            batch_size=batch_size,
-            info_reg_coeff=self.info_reg_coeff,
-            generator_learning_rate=self.generator_learning_rate,
-            discriminator_learning_rate=self.discriminator_learning_rate,
-        )
-        
-        algo.input_tensor = input_concat
-        algo.init_opt()
-        
-        self.output_tensor = model.discriminate(input_concat)[1] # TODO: which
-        self.train_op = algo.generator_trainer
-                
-        ## TODO: only new variables.
-        init = tf.initialize_all_variables()
-        self.session.run(init)
-        
+            ## TODO: only new variables.
+            init = tf.initialize_all_variables()
+            self.session.run(init)
         
     # I/O
     def register_tensor(self, new_tensor):
