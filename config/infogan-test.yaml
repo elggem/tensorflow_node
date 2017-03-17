@@ -5,18 +5,20 @@ tensorflow_node:
       input: '/Users/ralf/CogVMSharedFolder/perception/catkin_ws/src/tensorflow_node/data/mnist.mp4'
       number_of_frames: -1 # -1 read all
       repeat: false
-      output_size: [16, 16]
+      output_size: [32, 32]
       batch_size: 250
   
   architecture:
     type: InfoGANArchitecture
-#    params:
-#      latent_spec: [
-#                  (Uniform(62), False),
-#                  (Categorical(10), True),
-#                  (Uniform(1, fix_std=True), True),
-#                  (Uniform(1, fix_std=True), True)
-#              ]
+    params:
+      latent_spec: "[
+                  (Uniform(62), False),
+                  (Uniform(1, fix_std=True), True),
+                  (Uniform(1, fix_std=True), True),
+                  (Uniform(1, fix_std=True), True),
+                  (Uniform(1, fix_std=True), True),
+                  (Uniform(1, fix_std=True), True)
+              ]"
 
   publishing:
     topic: infogan
