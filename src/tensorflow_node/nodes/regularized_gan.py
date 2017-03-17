@@ -72,7 +72,7 @@ class RegularizedGANNode(object):
                 image_shape = (int(np.sqrt(input_dim)), int(np.sqrt(input_dim)), 1)
                 batch_size = input_concat.get_shape()[0].value 
 
-                model = RegularizedGAN(
+                self.model = model = RegularizedGAN(
                     output_dist=MeanBernoulli(input_dim),
                     latent_spec=self.latent_spec,
                     batch_size=batch_size,
@@ -80,7 +80,7 @@ class RegularizedGANNode(object):
                     network_type="mnist",
                 )
 
-                algo = InfoGANTrainer(
+                self.algo = algo = InfoGANTrainer(
                     name=self.name,
                     model=model,
                     batch_size=batch_size,
@@ -98,6 +98,12 @@ class RegularizedGANNode(object):
 
                 ## initialize new variables
                 self.session.run(tf.initialize_variables(set(tf.all_variables()) - temp))
+        
+    def visualize_all_factors(self):
+        if self.output_tensor is None:
+            self.initialize_graph()
+        print self.name + " outputting latent variable visualization to TB..."
+        self.algo.visualize_all_factors()
         
     # I/O
     def register_tensor(self, new_tensor):

@@ -89,6 +89,12 @@ with tf.Session() as sess:
         # quit gracefully
         if (rospy.is_shutdown()):
             # TODO: checkpoint model here
+            
+            # Visualize InfoGAN nodes
+            for node in architecture.nodes:
+                # in case of InfoGAN visualize all factors here.
+                node.visualize_all_factors()
+
             print("\nExiting DeSTIN ✌️ ")
             sys.exit(0)
     
