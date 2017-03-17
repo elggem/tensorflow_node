@@ -191,6 +191,7 @@ class AutoEncoderNode(object):
         return np.array(recursive_activations)
 
     def max_activation_recursive_summary(self):
+        # TODO: possibly use np.tile, and also wrap this to use a direct tf.Session object.
         # TODO: this is horrible, but it works. :)
         # sess = self.session
 
