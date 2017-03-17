@@ -10,7 +10,7 @@ from tensorflow_node.nodes import *
 
 from infogan.misc.distributions import Uniform, Categorical, Gaussian, MeanBernoulli
 
-class InfoGANArchitecture(NetworkArchitecture):
+class SingleInfoGANArchitecture(NetworkArchitecture):
 
     def __init__(self, session, inputlayer, latent_spec):
         
@@ -19,22 +19,14 @@ class InfoGANArchitecture(NetworkArchitecture):
         
         # Manual initialization of InfoGAN
         ##...
-        infogan_a = RegularizedGANNode(
+        infogan_node = RegularizedGANNode(
             session,
-            name="gan_a",
+            name="gan",
             latent_spec=latent_spec
         )
         
-        infogan_b = RegularizedGANNode(
-            session,
-            name="gan_b"
-        )
+        infogan_node.register_tensor(inputlayer.get_tensor_for_region([0, 0, 32, 32]))
+        infogan_node.initialize_graph()
         
-        infogan_a.register_tensor(inputlayer.get_tensor_for_region([0, 0, 32, 32]))
-        infogan_b.register_tensor(inputlayer.get_tensor_for_region([0, 0, 32, 32]))
-        
-        infogan_a.initialize_graph()
-        infogan_b.initialize_graph()
-        
-        self.nodes = [infogan_a, infogan_b]
-        self.train_op = [infogan_a.train_op, infogan_b.train_op]
+        self.nodes = [infogan_node]
+        self.train_op = [infogan_node.train_op]

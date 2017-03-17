@@ -93,7 +93,9 @@ class RegularizedGANNode(object):
                 algo.init_opt()
         
                 # set output tensors
-                self.output_tensor = model.discriminate(input_concat)[1] # TODO: which
+                self.discriminator = model.discriminate(input_concat)
+
+                self.output_tensor = model.discriminate(input_concat)[1] # meaning latent_vars
                 self.train_op = algo.generator_trainer
 
                 ## initialize new variables

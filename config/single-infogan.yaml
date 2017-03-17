@@ -9,7 +9,7 @@ tensorflow_node:
       batch_size: 250
   
   architecture:
-    type: InfoGANArchitecture
+    type: SingleInfoGANArchitecture
     params:
       latent_spec: "[
                   (Uniform(62), False),
