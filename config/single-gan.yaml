@@ -1,0 +1,20 @@
+tensorflow_node:
+  inputlayer: 
+    type: OpenCVInputLayer
+    params:
+      input: '/home/ralf/HR/perception/catkin_ws/src/tensorflow_node/data/mnist.mp4'
+      number_of_frames: -1 # read all
+      repeat: true
+      #input: '/videofile/image_raw' for ROSInputLayer
+      output_size: [28, 28]
+      batch_size: 250
+  
+  architecture:
+    type: SingleGANArchitecture
+    params:
+      foo: "bar"
+  
+  publishing:
+    topic: destin
+    summaries: true
+    summary_folder: "/home/ralf/destin-output"
