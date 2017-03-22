@@ -23,7 +23,7 @@ class SummaryWriter(object):
             rospy.logdebug("initializing summary writer.")
             now = datetime.datetime.now()
             self.directory = self.get_output_folder('summaries') + now.strftime("/%Y-%m-%d-%s")
-            self.writer = tf.train.SummaryWriter(self.directory)
+            self.writer = tf.summary.FileWriter(self.directory)
 
     def get_output_folder(self, path):
         # output_path = pjoin(os.getcwd(), 'output', path)
@@ -73,7 +73,7 @@ class SummaryWriter(object):
     def image_summary(self, tag, image):
         image = image.reshape((1, image.shape[0], image.shape[1], 1)).astype(np.float32)
 
-        image_summary_op = tf.image_summary(tag, image)
+        image_summary_op = tf.summary.image(tag, image)
         image_summary_str = tf.Session().run(image_summary_op)
 
         SummaryWriter().writer.add_summary(image_summary_str, 0)

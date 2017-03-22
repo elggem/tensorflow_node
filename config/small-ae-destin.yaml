@@ -2,7 +2,7 @@ tensorflow_node:
   inputlayer: 
     type: OpenCVInputLayer
     params:
-      input: '/Users/ralf/CogVMSharedFolder/perception/ae-destin/data/mnist.mp4'
+      input: '/home/ralf/HR/perception/catkin_ws/src/tensorflow_node/data/mnist.mp4'
       number_of_frames: -1 # read all
       repeat: true
       #input: '/videofile/image_raw' for ROSInputLayer
@@ -22,4 +22,4 @@ tensorflow_node:
   publishing:
     topic: destin
     summaries: true
-    summary_folder: "/Users/ralf/CogVMSharedFolder/destin-output"
+    summary_folder: "/home/ralf/destin-output"

@@ -39,7 +39,7 @@ with tf.Session() as sess:
         rospy.loginfo("recording summaries to " + SummaryWriter().get_summary_folder())
         # initialize summary writer with graph
         SummaryWriter().writer.add_graph(sess.graph)
-        merged_summary_op = tf.merge_all_summaries()
+        merged_summary_op = tf.summary.merge_all()
 
     # initialize publishers for network
     publishers = {}

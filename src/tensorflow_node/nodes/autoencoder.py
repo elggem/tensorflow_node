@@ -68,13 +68,13 @@ class AutoEncoderNode(object):
         rospy.logdebug(self.name + " initializing output tensor...")
 
         # store all variables, so that we can later determinate what new variables there are
-        temp = set(tf.all_variables())
+        temp = set(tf.global_variables())
 
         # get absolute scope
         with tf.name_scope(self.scope):
             with tf.variable_scope(self.name):
                 # concatenate input tensors
-                input_concat = tf.concat(1, self.input_tensors)
+                input_concat = tf.concat(axis=1, values=self.input_tensors)
                 input_dim = input_concat.get_shape()[1]
 
                 # deep copy to prevent losses from affecting bottom layers.
@@ -105,7 +105,7 @@ class AutoEncoderNode(object):
                 with tf.name_scope("loss"):
                     # reconstruction loss
                     if self.loss == 'rmse':
-                        loss = tf.sqrt(tf.reduce_mean(tf.square(tf.sub(x_, decoded))))
+                        loss = tf.sqrt(tf.reduce_mean(tf.square(tf.subtract(x_, decoded))))
                     elif self.loss == 'cross-entropy':
                         # loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(decoded, x_))  ### TODO this is not working in it's current form! why?
                         loss = -tf.reduce_mean(x_ * tf.log(decoded))
@@ -113,14 +113,14 @@ class AutoEncoderNode(object):
                 with tf.name_scope("train"):
                     train_op = tf.train.AdamOptimizer(self.lr).minimize(loss)
 
-                tf.scalar_summary(self.name + "_loss", loss)
-                tf.histogram_summary(self.name + "_encode_weights", encode_weights)
-                tf.histogram_summary(self.name + "_encode_biases", encode_biases)
-                tf.histogram_summary(self.name + "_decode_weights", decode_weights)
-                tf.histogram_summary(self.name + "_decode_biases", decode_biases)
+                tf.summary.scalar(self.name + "_loss", loss)
+                tf.summary.histogram(self.name + "_encode_weights", encode_weights)
+                tf.summary.histogram(self.name + "_encode_biases", encode_biases)
+                tf.summary.histogram(self.name + "_decode_weights", decode_weights)
+                tf.summary.histogram(self.name + "_decode_biases", decode_biases)
 
             # initalize all new variables
-            self.session.run(tf.initialize_variables(set(tf.all_variables()) - temp))
+            self.session.run(tf.variables_initializer(set(tf.global_variables()) - temp))
 
             # attach reference to ourselve for recursive plot.
             train_op.sender = self
