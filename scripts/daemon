@@ -54,6 +54,7 @@ with tf.Session() as sess:
     def feed_callback(feed_dict):
         global iteration
         iteration += 1
+        print "Iteration %05d" % iteration
 
         # Execute train_op for entire network architecture
         for _ in xrange(50): # TODO parametrize this

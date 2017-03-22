@@ -83,7 +83,7 @@ class GANNode(object):
                 assign = x.assign(input_concat)
 
                 # Discriminator Net
-                X = input_concat
+                X = x
 
                 D_W1 = tf.Variable(xavier_init([input_dim, 128]), name='D_W1')
                 D_b1 = tf.Variable(tf.zeros(shape=[128]), name='D_b1')
@@ -125,20 +125,29 @@ class GANNode(object):
                     D_real, D_logit_real = discriminator(X)
                     D_fake, D_logit_fake = discriminator(G_sample)
 
-                    D_loss = -tf.reduce_mean(tf.log(D_real) + tf.log(1. - D_fake))
-                    G_loss = -tf.reduce_mean(tf.log(D_fake))
+                    #D_loss = -tf.reduce_mean(tf.log(D_real) + tf.log(1. - D_fake))
+                    #G_loss = -tf.reduce_mean(tf.log(D_fake))
+
+                    # alternative loss
+                    D_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=D_logit_real, labels=tf.ones_like(D_logit_real)))
+                    D_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=D_logit_fake, labels=tf.zeros_like(D_logit_fake)))
+                    D_loss = D_loss_real + D_loss_fake
+                    G_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=D_logit_fake, labels=tf.ones_like(D_logit_fake)))
 
                     # Only update D(X)'s parameters, so var_list = theta_D
                     D_solver = tf.train.AdamOptimizer().minimize(D_loss, var_list=theta_D)
                     # Only update G(X)'s parameters, so var_list = theta_G
                     G_solver = tf.train.AdamOptimizer().minimize(G_loss, var_list=theta_G)
                 
-                self.train_op = [D_solver, G_solver]
-                self.output_tensor = D_real
-                
-                tf.summary.scalar(self.name + "_D_loss", D_loss)
-                tf.summary.scalar(self.name + "_G_loss", G_loss)
-
+                    self.train_op = [D_solver, G_solver]
+                    self.output_tensor = D_real
+                    
+                    tf.summary.scalar(self.name + "_D_loss", D_loss)
+                    tf.summary.scalar(self.name + "_G_loss", G_loss)
+                    tf.summary.histogram(self.name + "_D_real", D_real)
+                    tf.summary.histogram(self.name + "_D_fake", D_fake)
+                    tf.summary.image(self.name + "real_sample", tf.reshape(X, [-1,28,28,1]), max_outputs=2)
+                    tf.summary.image(self.name + "fake_sample", tf.reshape(G_sample, [-1,28,28,1]), max_outputs=2)
 
             # initalize all new variables
             self.session.run(tf.variables_initializer(set(tf.global_variables()) - temp))

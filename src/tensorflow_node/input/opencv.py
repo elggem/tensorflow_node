@@ -40,7 +40,7 @@ class OpenCVInputLayer(InputLayer):
             res = cv2.resize(frame, (self.output_size[0], self.output_size[1]), interpolation=cv2.INTER_CUBIC)
             gray = cv2.cvtColor(res, cv2.COLOR_BGR2GRAY)
             gray = gray * 1.0 / 255
-
+            
             # use grayscale image
             self.batch.append(gray.reshape([self.output_size[0], self.output_size[1], 1]))
 

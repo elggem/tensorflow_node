@@ -15,7 +15,7 @@ class SingleGANArchitecture(NetworkArchitecture):
 
         gan = GANNode(session)
 
-        gan.register_tensor(inputlayer.get_tensor_for_region([0, 0, 14, 14]))
+        gan.register_tensor(inputlayer.get_tensor_for_region([0, 0, 28, 28]))
 
         gan.initialize_graph()
 
