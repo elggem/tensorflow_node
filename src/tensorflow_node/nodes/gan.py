@@ -23,6 +23,9 @@ class GANNode(object):
     # Initialization
     def __init__(self,
                  session,
+                 h_dim=128,
+                 z_dim=64,
+                 d_steps=3,
                  name="gan",
                  loss="log",
                  lr = 1e-3):
@@ -41,6 +44,9 @@ class GANNode(object):
         self.train_op = None
 
         # set parameters (Move those to init function params?)
+        self.h_dim = h_dim
+        self.z_dim = z_dim
+        self.d_steps = d_steps
         self.loss = loss
         self.lr = lr
 
@@ -68,7 +74,7 @@ class GANNode(object):
 
                 def sample_Z(m, n):
                     '''Uniform prior for G(Z)'''
-                    return tf.random_uniform([m, n], minval=-1, maxval=1)
+                    return tf.random_uniform([m, n], minval=-1, maxval=1) # TODO: Use Normal dist here.
                 
                 def xavier_init(size):
                     in_dim = size[0]
@@ -88,21 +94,21 @@ class GANNode(object):
                 assign = X.assign(input_concat)
 
                 # Discriminator Net
-                D_W1 = tf.Variable(xavier_init([input_dim, 128]), name='D_W1')
-                D_b1 = tf.Variable(tf.zeros(shape=[128]), name='D_b1')
+                D_W1 = tf.Variable(xavier_init([input_dim, self.h_dim]), name='D_W1')
+                D_b1 = tf.Variable(tf.zeros(shape=[self.h_dim]), name='D_b1')
 
-                D_W2 = tf.Variable(xavier_init([128, 1]), name='D_W2')
+                D_W2 = tf.Variable(xavier_init([self.h_dim, 1]), name='D_W2')
                 D_b2 = tf.Variable(tf.zeros(shape=[1]), name='D_b2')
 
                 theta_D = [D_W1, D_W2, D_b1, D_b2]
 
                 # Generator Net
-                Z = sample_Z(batch_size, 100)
+                Z = sample_Z(batch_size, self.z_dim)
                 
-                G_W1 = tf.Variable(xavier_init([100, 128]), name='G_W1')
-                G_b1 = tf.Variable(tf.zeros(shape=[128]), name='G_b1')
+                G_W1 = tf.Variable(xavier_init([self.z_dim, self.h_dim]), name='G_W1')
+                G_b1 = tf.Variable(tf.zeros(shape=[self.h_dim]), name='G_b1')
 
-                G_W2 = tf.Variable(xavier_init([128, input_dim]), name='G_W2')
+                G_W2 = tf.Variable(xavier_init([self.h_dim, input_dim]), name='G_W2')
                 G_b2 = tf.Variable(tf.zeros(shape=[input_dim]), name='G_b2')
 
                 theta_G = [G_W1, G_W2, G_b1, G_b2]
@@ -139,8 +145,8 @@ class GANNode(object):
                         G_loss = 0.5 * tf.reduce_mean((D_logit_fake - 1)**2)                        
                     elif self.loss == "wasserstein":
                         # Wasserstein-GAN
-                        D_loss = tf.reduce_mean(D_real) - tf.reduce_mean(D_fake)
-                        G_loss = -tf.reduce_mean(D_fake)
+                        D_loss = tf.reduce_mean(D_logit_real) - tf.reduce_mean(D_logit_fake)
+                        G_loss = tf.reduce_mean(D_logit_fake)
                         clip_D = [p.assign(tf.clip_by_value(p, -0.01, 0.01)) for p in theta_D]
                     else:
                         raise NotImplementedError
@@ -149,20 +155,26 @@ class GANNode(object):
                     D_solver = tf.train.AdamOptimizer(learning_rate=self.lr).minimize(D_loss, var_list=theta_D)
                     # Only update G(X)'s parameters, so var_list = theta_G
                     G_solver = tf.train.AdamOptimizer(learning_rate=self.lr).minimize(G_loss, var_list=theta_G)
-                
-                    self.train_op = [D_solver, G_solver]
-                    self.output_tensor = D_real
+
+                    self.output_tensor = D_logit_real
+                    self.train_op = []
+                    
+                    for _ in range(self.d_steps):
+                        self.train_op.append(D_solver)
 
                     if self.loss == "wasserstein":
                         self.train_op.insert(1,clip_D)
+                
+                    self.train_op.append(G_solver)
                     
+                
                     # Summaries
                     tf.summary.scalar(self.name + "_D_loss", D_loss)
                     tf.summary.scalar(self.name + "_G_loss", G_loss)
                     tf.summary.histogram(self.name + "_D_real", D_real)
                     tf.summary.histogram(self.name + "_D_fake", D_fake)
-                    tf.summary.image(self.name + "real_sample", tf.reshape(X, [-1,image_shape[0],image_shape[1],1]), max_outputs=1)
-                    tf.summary.image(self.name + "fake_sample", tf.reshape(G_sample, [-1,image_shape[0],image_shape[1],1]), max_outputs=12)
+                    tf.summary.image(self.name + "real_sample", tf.reshape(X, [-1,image_shape[0],image_shape[1],1]), max_outputs=4)
+                    tf.summary.image(self.name + "fake_sample", tf.reshape(G_sample, [-1,image_shape[0],image_shape[1],1]), max_outputs=4)
 
             # initalize all new variables
             self.session.run(tf.variables_initializer(set(tf.global_variables()) - temp))

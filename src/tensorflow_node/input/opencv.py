@@ -52,7 +52,7 @@ class OpenCVInputLayer(InputLayer):
                 feed_dict = {self.name + '/input:0': np.array(self.batch)}
                 feed_callback(feed_dict)
                 self.batch = []
-                print("Inputlayer: Evaluated batch of size %i" % self.batch_size)
+                #print("Inputlayer: Evaluated batch of size %i" % self.batch_size)
 
             if (frames > 0):
                 frames -= 1

@@ -57,8 +57,8 @@ with tf.Session() as sess:
         print "Iteration %05d" % iteration
 
         # Execute train_op for entire network architecture
-        for _ in xrange(50): # TODO parametrize this
-            sess.run(architecture.train_op, feed_dict=feed_dict)
+        #for _ in xrange(50): # TODO parametrize this
+        sess.run(architecture.train_op, feed_dict=feed_dict)
 
         # iterate over each state and stream output to ROS
         for node in architecture.nodes:
