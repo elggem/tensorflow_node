@@ -80,9 +80,10 @@ with tf.Session() as sess:
         
         # publish summary output
         if (rospy.get_param(config_prefix+"/publishing/summaries")):
-            summary_str = merged_summary_op.eval(feed_dict=feed_dict, session=sess)
-            SummaryWriter().writer.add_summary(summary_str, iteration)
-            SummaryWriter().writer.flush()
+            if merged_summary_op != None:
+                summary_str = merged_summary_op.eval(feed_dict=feed_dict, session=sess)
+                SummaryWriter().writer.add_summary(summary_str, iteration)
+                SummaryWriter().writer.flush()
 
         # quit gracefully
         if (rospy.is_shutdown()):

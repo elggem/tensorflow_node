@@ -113,11 +113,12 @@ class AutoEncoderNode(object):
                 with tf.name_scope("train"):
                     train_op = tf.train.AdamOptimizer(self.lr).minimize(loss)
 
-                tf.summary.scalar(self.name + "_loss", loss)
-                tf.summary.histogram(self.name + "_encode_weights", encode_weights)
-                tf.summary.histogram(self.name + "_encode_biases", encode_biases)
-                tf.summary.histogram(self.name + "_decode_weights", decode_weights)
-                tf.summary.histogram(self.name + "_decode_biases", decode_biases)
+                with tf.device("/cpu:0"):
+                    tf.summary.scalar(self.name + "_loss", loss)
+                    tf.summary.histogram(self.name + "_encode_weights", encode_weights)
+                    tf.summary.histogram(self.name + "_encode_biases", encode_biases)
+                    tf.summary.histogram(self.name + "_decode_weights", decode_weights)
+                    tf.summary.histogram(self.name + "_decode_biases", decode_biases)
 
             # initalize all new variables
             self.session.run(tf.variables_initializer(set(tf.global_variables()) - temp))

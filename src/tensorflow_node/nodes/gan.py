@@ -169,12 +169,13 @@ class GANNode(object):
                     
                 
                     # Summaries
-                    tf.summary.scalar(self.name + "_D_loss", D_loss)
-                    tf.summary.scalar(self.name + "_G_loss", G_loss)
-                    tf.summary.histogram(self.name + "_D_real", D_real)
-                    tf.summary.histogram(self.name + "_D_fake", D_fake)
-                    tf.summary.image(self.name + "real_sample", tf.reshape(X, [-1,image_shape[0],image_shape[1],1]), max_outputs=4)
-                    tf.summary.image(self.name + "fake_sample", tf.reshape(G_sample, [-1,image_shape[0],image_shape[1],1]), max_outputs=4)
+                    with tf.device("/cpu:0"):
+                        tf.summary.scalar(self.name + "_D_loss", D_loss)
+                        tf.summary.scalar(self.name + "_G_loss", G_loss)
+                        tf.summary.histogram(self.name + "_D_real", D_real)
+                        tf.summary.histogram(self.name + "_D_fake", D_fake)
+                        tf.summary.image(self.name + "real_sample", tf.reshape(X, [-1,image_shape[0],image_shape[1],1]), max_outputs=4)
+                        tf.summary.image(self.name + "fake_sample", tf.reshape(G_sample, [-1,image_shape[0],image_shape[1],1]), max_outputs=4)
 
             # initalize all new variables
             self.session.run(tf.variables_initializer(set(tf.global_variables()) - temp))

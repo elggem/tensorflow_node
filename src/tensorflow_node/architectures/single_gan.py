@@ -12,14 +12,14 @@ class SingleGANArchitecture(NetworkArchitecture):
 
     def __init__(self, session, inputlayer, foo):
         # Manual initialization of 4x4 DeSTIN
-
-        gan = GANNode(session,
+        with tf.device("gpu:1"):
+            gan = GANNode(session,
                       name="GAN",
-                      loss="wasserstein")
+                      loss="ls")
 
-        gan.register_tensor(inputlayer.get_tensor_for_region([0, 0, 64, 64]))
+            gan.register_tensor(inputlayer.get_tensor_for_region([0, 0, 64, 64]))
 
-        gan.initialize_graph()
+            gan.initialize_graph()
 
         self.nodes = [gan]
         self.train_op = [gan.train_op]
