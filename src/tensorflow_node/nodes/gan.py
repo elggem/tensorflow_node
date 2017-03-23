@@ -2,7 +2,9 @@
 
 """
 
-AE Node
+GAN Node
+
+heaviliy influenced by https://github.com/wiseodd/generative-models
 
 """
 
@@ -22,7 +24,8 @@ class GANNode(object):
     def __init__(self,
                  session,
                  name="gan",
-                 loss="log"):
+                 loss="log",
+                 lr = 1e-3):
 
         self.name = name
 
@@ -39,6 +42,7 @@ class GANNode(object):
 
         # set parameters (Move those to init function params?)
         self.loss = loss
+        self.lr = lr
 
         # generate reusable scope
         with tf.name_scope(self.name) as scope:
@@ -75,16 +79,15 @@ class GANNode(object):
                 input_concat = tf.concat(axis=1, values=self.input_tensors)
                 input_dim = input_concat.get_shape()[1].value
                 batch_size = input_concat.get_shape()[0].value
+                image_shape = [int(np.sqrt(input_dim)),int(np.sqrt(input_dim))]
 
                 # deep copy to prevent losses from affecting bottom layers.
-                x = tf.get_variable("input_copy", input_concat.get_shape())
+                X = tf.get_variable("input_copy", input_concat.get_shape())
 
                 # this is an operation that needs to be executed before other ops, ensure control dependency!
-                assign = x.assign(input_concat)
+                assign = X.assign(input_concat)
 
                 # Discriminator Net
-                X = x
-
                 D_W1 = tf.Variable(xavier_init([input_dim, 128]), name='D_W1')
                 D_b1 = tf.Variable(tf.zeros(shape=[128]), name='D_b1')
 
@@ -94,7 +97,6 @@ class GANNode(object):
                 theta_D = [D_W1, D_W2, D_b1, D_b2]
 
                 # Generator Net
-                #Z = tf.placeholder(tf.float32, shape=[None, 100], name='Z')
                 Z = sample_Z(batch_size, 100)
                 
                 G_W1 = tf.Variable(xavier_init([100, 128]), name='G_W1')
@@ -125,29 +127,42 @@ class GANNode(object):
                     D_real, D_logit_real = discriminator(X)
                     D_fake, D_logit_fake = discriminator(G_sample)
 
-                    #D_loss = -tf.reduce_mean(tf.log(D_real) + tf.log(1. - D_fake))
-                    #G_loss = -tf.reduce_mean(tf.log(D_fake))
-
-                    # alternative loss
-                    D_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=D_logit_real, labels=tf.ones_like(D_logit_real)))
-                    D_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=D_logit_fake, labels=tf.zeros_like(D_logit_fake)))
-                    D_loss = D_loss_real + D_loss_fake
-                    G_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=D_logit_fake, labels=tf.ones_like(D_logit_fake)))
+                    if self.loss == "log":
+                        # alternative loss
+                        D_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=D_logit_real, labels=tf.ones_like(D_logit_real)))
+                        D_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=D_logit_fake, labels=tf.zeros_like(D_logit_fake)))
+                        D_loss = D_loss_real + D_loss_fake
+                        G_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=D_logit_fake, labels=tf.ones_like(D_logit_fake)))    
+                    elif self.loss == "ls":
+                        # LSGAN 
+                        D_loss = 0.5 * (tf.reduce_mean((D_logit_real - 1)**2) + tf.reduce_mean(D_logit_fake**2))
+                        G_loss = 0.5 * tf.reduce_mean((D_logit_fake - 1)**2)                        
+                    elif self.loss == "wasserstein":
+                        # Wasserstein-GAN
+                        D_loss = tf.reduce_mean(D_real) - tf.reduce_mean(D_fake)
+                        G_loss = -tf.reduce_mean(D_fake)
+                        clip_D = [p.assign(tf.clip_by_value(p, -0.01, 0.01)) for p in theta_D]
+                    else:
+                        raise NotImplementedError
 
                     # Only update D(X)'s parameters, so var_list = theta_D
-                    D_solver = tf.train.AdamOptimizer().minimize(D_loss, var_list=theta_D)
+                    D_solver = tf.train.AdamOptimizer(learning_rate=self.lr).minimize(D_loss, var_list=theta_D)
                     # Only update G(X)'s parameters, so var_list = theta_G
-                    G_solver = tf.train.AdamOptimizer().minimize(G_loss, var_list=theta_G)
+                    G_solver = tf.train.AdamOptimizer(learning_rate=self.lr).minimize(G_loss, var_list=theta_G)
                 
                     self.train_op = [D_solver, G_solver]
                     self.output_tensor = D_real
+
+                    if self.loss == "wasserstein":
+                        self.train_op.insert(1,clip_D)
                     
+                    # Summaries
                     tf.summary.scalar(self.name + "_D_loss", D_loss)
                     tf.summary.scalar(self.name + "_G_loss", G_loss)
                     tf.summary.histogram(self.name + "_D_real", D_real)
                     tf.summary.histogram(self.name + "_D_fake", D_fake)
-                    tf.summary.image(self.name + "real_sample", tf.reshape(X, [-1,28,28,1]), max_outputs=2)
-                    tf.summary.image(self.name + "fake_sample", tf.reshape(G_sample, [-1,28,28,1]), max_outputs=2)
+                    tf.summary.image(self.name + "real_sample", tf.reshape(X, [-1,image_shape[0],image_shape[1],1]), max_outputs=1)
+                    tf.summary.image(self.name + "fake_sample", tf.reshape(G_sample, [-1,image_shape[0],image_shape[1],1]), max_outputs=12)
 
             # initalize all new variables
             self.session.run(tf.variables_initializer(set(tf.global_variables()) - temp))

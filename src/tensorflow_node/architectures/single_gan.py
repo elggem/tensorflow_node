@@ -13,9 +13,11 @@ class SingleGANArchitecture(NetworkArchitecture):
     def __init__(self, session, inputlayer, foo):
         # Manual initialization of 4x4 DeSTIN
 
-        gan = GANNode(session)
+        gan = GANNode(session,
+                      name="GAN",
+                      loss="ls")
 
-        gan.register_tensor(inputlayer.get_tensor_for_region([0, 0, 28, 28]))
+        gan.register_tensor(inputlayer.get_tensor_for_region([0, 0, 64, 64]))
 
         gan.initialize_graph()
 
