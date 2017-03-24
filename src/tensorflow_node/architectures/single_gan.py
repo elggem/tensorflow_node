@@ -16,6 +16,9 @@ class SingleGANArchitecture(NetworkArchitecture):
             gan = GANNode(session,
                       name="InfoGAN",
                       loss="wasserstein",
+                      lr=1e-4,
+                      z_dim=16,
+                      d_steps=1,
                       infogan=True)
 
             gan.register_tensor(inputlayer.get_tensor_for_region([0, 0, 64, 64]))

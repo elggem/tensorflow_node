@@ -114,7 +114,8 @@ class GANNode(object):
                 # Generator Net
                 Z = sample_Z(batch_size, self.z_dim)
                 
-                self.z_dim += 10
+                if self.infogan:
+                    self.z_dim += 10
                 
                 G_W1 = tf.Variable(xavier_init([self.z_dim, self.h_dim]), name='G_W1')
                 G_b1 = tf.Variable(tf.zeros(shape=[self.h_dim]), name='G_b1')
@@ -166,6 +167,8 @@ class GANNode(object):
                         G_sample = generator(Z, c)
                         Q_c_given_x = Q(G_sample)
                         
+                        latent_variables = Q(X)
+                        
                         cond_ent = tf.reduce_mean(-tf.reduce_sum(tf.log(Q_c_given_x + 1e-8) * c, 1))
                         ent = tf.reduce_mean(-tf.reduce_sum(tf.log(c + 1e-8) * c, 1))
                         Q_loss = cond_ent + ent
@@ -190,15 +193,19 @@ class GANNode(object):
                         D_loss = tf.reduce_mean(D_logit_real) - tf.reduce_mean(D_logit_fake)
                         G_loss = tf.reduce_mean(D_logit_fake)
                         clip_D = [p.assign(tf.clip_by_value(p, -0.01, 0.01)) for p in theta_D]
+                    elif self.loss == "legacy":
+                        D_loss = -tf.reduce_mean(tf.log(D_real + 1e-8) + tf.log(1 - D_fake + 1e-8))
+                        G_loss = -tf.reduce_mean(tf.log(D_fake + 1e-8))
                     else:
                         raise NotImplementedError
 
                     # Only update D(X)'s parameters, so var_list = theta_D
                     D_solver = tf.train.AdamOptimizer(learning_rate=self.lr).minimize(D_loss, var_list=theta_D)
-                    # Only update G(X)'s parameters, so var_list = theta_G
-                    G_solver = tf.train.AdamOptimizer(learning_rate=self.lr).minimize(G_loss, var_list=theta_G)
+                    with self.session.graph.control_dependencies([D_solver]):
+                        # Only update G(X)'s parameters, so var_list = theta_G
+                        G_solver = tf.train.AdamOptimizer(learning_rate=self.lr).minimize(G_loss, var_list=theta_G)
 
-                    self.output_tensor = D_logit_real
+                    self.output_tensor = D_real#latent_variables
                     self.train_op = []
                     
                     for _ in range(self.d_steps):
@@ -211,19 +218,31 @@ class GANNode(object):
                     
                     # InfoGAN
                     if self.infogan:
-                        Q_solver = tf.train.AdamOptimizer().minimize(Q_loss, var_list=theta_G + theta_Q)
+                        with self.session.graph.control_dependencies([G_solver]):
+                            Q_solver = tf.train.AdamOptimizer(learning_rate=self.lr).minimize(Q_loss, var_list=theta_G + theta_Q)
                         self.train_op.append(Q_solver)
                     
                     # Summaries
                     with tf.device("/cpu:0"):
                         tf.summary.scalar(self.name + "_D_loss", D_loss)
                         tf.summary.scalar(self.name + "_G_loss", G_loss)
-                        if self.infogan:
-                            tf.summary.scalar(self.name + "_Q_loss", Q_loss)
                         tf.summary.histogram(self.name + "_D_real", D_real)
                         tf.summary.histogram(self.name + "_D_fake", D_fake)
-                        tf.summary.image(self.name + "real_sample", tf.reshape(X, [-1,image_shape[0],image_shape[1],1]), max_outputs=4)
-                        tf.summary.image(self.name + "fake_sample", tf.reshape(G_sample, [-1,image_shape[0],image_shape[1],1]), max_outputs=4)
+
+                        tf.summary.image(self.name + "real_sample", tf.reshape(X, [-1,image_shape[0],image_shape[1],1]), max_outputs=5)
+                        tf.summary.image(self.name + "fake_sample", tf.reshape(G_sample, [-1,image_shape[0],image_shape[1],1]), max_outputs=5)
+                        
+                        if self.infogan:
+                            tf.summary.scalar(self.name + "_Q_loss", Q_loss)  
+                            tf.summary.histogram(self.name + "_latent_variables", latent_variables)
+                            
+                            # Generate latent var pictures for summary #todo: tiles.
+                            for i in xrange(10):
+                                G_label = generator(sample_Z(5, self.z_dim-10), tf.one_hot([i]*5,10))
+                                tf.summary.image(self.name + "infogan_sample_%d" % i, tf.reshape(G_label, [-1,image_shape[0],image_shape[1],1]), max_outputs=5)
+                        else:
+                                G_label = generator(sample_Z(5, self.z_dim))
+                                tf.summary.image(self.name + "gan_sample", tf.reshape(G_label, [-1,image_shape[0],image_shape[1],1]), max_outputs=5)
 
             # initalize all new variables
             self.session.run(tf.variables_initializer(set(tf.global_variables()) - temp))
