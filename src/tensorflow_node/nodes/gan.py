@@ -28,6 +28,7 @@ class GANNode(object):
                  d_steps=3,
                  name="gan",
                  loss="log",
+                 infogan=False,
                  lr = 1e-3):
 
         self.name = name
@@ -49,7 +50,8 @@ class GANNode(object):
         self.d_steps = d_steps
         self.loss = loss
         self.lr = lr
-
+        self.infogan = infogan
+        
         # generate reusable scope
         with tf.name_scope(self.name) as scope:
             self.scope = scope
@@ -75,6 +77,13 @@ class GANNode(object):
                 def sample_Z(m, n):
                     '''Uniform prior for G(Z)'''
                     return tf.random_uniform([m, n], minval=-1, maxval=1) # TODO: Use Normal dist here.
+                
+                # for InfoGAN
+                def sample_c(m):
+                    #return np.random.multinomial(1, 10*[0.1], size=m)
+                    onehot = tf.one_hot(tf.multinomial(tf.log([[10.,10.]*5]),m),10)
+                    return tf.reshape(onehot, [m,-1])
+
                 
                 def xavier_init(size):
                     in_dim = size[0]
@@ -105,6 +114,8 @@ class GANNode(object):
                 # Generator Net
                 Z = sample_Z(batch_size, self.z_dim)
                 
+                self.z_dim += 10
+                
                 G_W1 = tf.Variable(xavier_init([self.z_dim, self.h_dim]), name='G_W1')
                 G_b1 = tf.Variable(tf.zeros(shape=[self.h_dim]), name='G_b1')
 
@@ -113,13 +124,32 @@ class GANNode(object):
 
                 theta_G = [G_W1, G_W2, G_b1, G_b2]
 
-                def generator(z):
-                    G_h1 = tf.nn.relu(tf.matmul(z, G_W1) + G_b1)
+                ## InfoGAN
+                if self.infogan:
+                    Q_W1 = tf.Variable(xavier_init([input_dim, self.h_dim]))
+                    Q_b1 = tf.Variable(tf.zeros(shape=[self.h_dim]))
+
+                    Q_W2 = tf.Variable(xavier_init([self.h_dim, 10]))
+                    Q_b2 = tf.Variable(tf.zeros(shape=[10]))
+
+                    theta_Q = [Q_W1, Q_W2, Q_b1, Q_b2]
+
+                    def Q(x):
+                        Q_h1 = tf.nn.relu(tf.matmul(x, Q_W1) + Q_b1)
+                        Q_prob = tf.nn.softmax(tf.matmul(Q_h1, Q_W2) + Q_b2)
+                        return Q_prob
+
+                def generator(z, c=None):
+                    if c != None:
+                        inputs = tf.concat(axis=1, values=[z, c])
+                    else:
+                        inputs = z
+
+                    G_h1 = tf.nn.relu(tf.matmul(inputs, G_W1) + G_b1)
                     G_log_prob = tf.matmul(G_h1, G_W2) + G_b2
                     G_prob = tf.nn.sigmoid(G_log_prob)
 
                     return G_prob
-
 
                 def discriminator(x):
                     D_h1 = tf.nn.relu(tf.matmul(x, D_W1) + D_b1)
@@ -129,7 +159,19 @@ class GANNode(object):
                     return D_prob, D_logit
 
                 with self.session.graph.control_dependencies([assign]):
-                    G_sample = generator(Z)
+
+                    # InfoGAN
+                    if self.infogan:
+                        c = sample_c(batch_size)
+                        G_sample = generator(Z, c)
+                        Q_c_given_x = Q(G_sample)
+                        
+                        cond_ent = tf.reduce_mean(-tf.reduce_sum(tf.log(Q_c_given_x + 1e-8) * c, 1))
+                        ent = tf.reduce_mean(-tf.reduce_sum(tf.log(c + 1e-8) * c, 1))
+                        Q_loss = cond_ent + ent
+                    else:
+                        G_sample = generator(Z)
+                    
                     D_real, D_logit_real = discriminator(X)
                     D_fake, D_logit_fake = discriminator(G_sample)
 
@@ -167,11 +209,17 @@ class GANNode(object):
                 
                     self.train_op.append(G_solver)
                     
-                
+                    # InfoGAN
+                    if self.infogan:
+                        Q_solver = tf.train.AdamOptimizer().minimize(Q_loss, var_list=theta_G + theta_Q)
+                        self.train_op.append(Q_solver)
+                    
                     # Summaries
                     with tf.device("/cpu:0"):
                         tf.summary.scalar(self.name + "_D_loss", D_loss)
                         tf.summary.scalar(self.name + "_G_loss", G_loss)
+                        if self.infogan:
+                            tf.summary.scalar(self.name + "_Q_loss", Q_loss)
                         tf.summary.histogram(self.name + "_D_real", D_real)
                         tf.summary.histogram(self.name + "_D_fake", D_fake)
                         tf.summary.image(self.name + "real_sample", tf.reshape(X, [-1,image_shape[0],image_shape[1],1]), max_outputs=4)
