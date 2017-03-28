@@ -28,8 +28,8 @@ class GANNode(object):
                  d_steps=3,
                  name="gan",
                  loss="log",
-                 infogan=False,
-                 lr = 1e-3):
+                 lr = 1e-3,
+                 latent_vars=None):
 
         self.name = name
 
@@ -50,7 +50,15 @@ class GANNode(object):
         self.d_steps = d_steps
         self.loss = loss
         self.lr = lr
-        self.infogan = infogan
+        
+        self.c_dim = 0
+        
+        if latent_vars == None:
+            self.infogan = False
+        else:
+            self.infogan = True
+            self.latent_vars = latent_vars
+            for _,i in latent_vars: self.c_dim+=i
         
         # generate reusable scope
         with tf.name_scope(self.name) as scope:
@@ -80,9 +88,20 @@ class GANNode(object):
                 
                 # for InfoGAN
                 def sample_c(m):
-                    #return np.random.multinomial(1, 10*[0.1], size=m)
-                    onehot = tf.one_hot(tf.multinomial(tf.log([[10.,10.]*5]),m),10)
-                    return tf.reshape(onehot, [m,-1])
+                    c = []
+                    
+                    for distribution, size in self.latent_vars:
+                        
+                        if distribution == "categorical":
+                            random = tf.round(tf.random_uniform([m, 1], minval=1, maxval=size))
+                            onehot = tf.one_hot(tf.cast(random, tf.int32),size)
+                            c.append(tf.reshape(onehot, [m,-1]))
+                        elif distribution == "uniform":
+                             tf.random_uniform([m, size], minval=-1, maxval=1) # TODO: maybe different range here.
+                        else: 
+                            raise NotImplementedError
+                
+                    return tf.concat(axis=1, values=c)
 
                 
                 def xavier_init(size):
@@ -113,11 +132,8 @@ class GANNode(object):
 
                 # Generator Net
                 Z = sample_Z(batch_size, self.z_dim)
-                
-                if self.infogan:
-                    self.z_dim += 10
-                
-                G_W1 = tf.Variable(xavier_init([self.z_dim, self.h_dim]), name='G_W1')
+                                
+                G_W1 = tf.Variable(xavier_init([self.z_dim+self.c_dim, self.h_dim]), name='G_W1')
                 G_b1 = tf.Variable(tf.zeros(shape=[self.h_dim]), name='G_b1')
 
                 G_W2 = tf.Variable(xavier_init([self.h_dim, input_dim]), name='G_W2')
@@ -229,20 +245,41 @@ class GANNode(object):
                         tf.summary.histogram(self.name + "_D_real", D_real)
                         tf.summary.histogram(self.name + "_D_fake", D_fake)
 
-                        tf.summary.image(self.name + "real_sample", tf.reshape(X, [-1,image_shape[0],image_shape[1],1]), max_outputs=5)
-                        tf.summary.image(self.name + "fake_sample", tf.reshape(G_sample, [-1,image_shape[0],image_shape[1],1]), max_outputs=5)
+                        tf.summary.image(self.name + "real_sample", tf.reshape(X, [-1,image_shape[0],image_shape[1],1]), max_outputs=1)
                         
                         if self.infogan:
                             tf.summary.scalar(self.name + "_Q_loss", Q_loss)  
                             tf.summary.histogram(self.name + "_latent_variables", latent_variables)
                             
-                            # Generate latent var pictures for summary #todo: tiles.
-                            for i in xrange(10):
-                                G_label = generator(sample_Z(5, self.z_dim-10), tf.one_hot([i]*5,10))
-                                tf.summary.image(self.name + "infogan_sample_%d" % i, tf.reshape(G_label, [-1,image_shape[0],image_shape[1],1]), max_outputs=5)
-                            else:
-                                G_label = generator(sample_Z(5, self.z_dim))
-                                tf.summary.image(self.name + "gan_sample", tf.reshape(G_label, [-1,image_shape[0],image_shape[1],1]), max_outputs=5)
+                            
+                            """
+                                TODOs
+                                
+                                make this drawing general purpose...
+                                refactor to make nicer.
+                            
+                            """
+                            
+                            for distribution, size in self.latent_vars:
+                                if distribution == "categorical":
+                                    # Generate latent var pictures for summary #TODO: latent_vars, tiles.
+                                    rows = []
+                                    
+                                    for i in xrange(size):
+                                        G_label = generator(sample_Z(size, self.z_dim), tf.one_hot([i]*size,size))
+                                        s = tf.reshape(G_label, [-1,image_shape[0],image_shape[1],1])
+                                        cols = tf.concat(axis=0, values=[s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7], s[8], s[9]])   
+                                        rows.append(cols)
+                                    
+                                    image = tf.concat(axis=1, values=rows)
+                                    tf.summary.image(self.name + "infogan_sample_latent_var_", tf.reshape(image, [1,.get_shape()[0].value,.get_shape()[1].value,1]), max_outputs=10)
+                              
+                                else:
+                                    raise NotImplementedError
+                        else:
+                            G_label = generator(sample_Z(5, self.z_dim))
+                            tf.summary.image(self.name + "gan_sample", tf.reshape(G_label, [-1,image_shape[0],image_shape[1],1]), max_outputs=5)
+                            tf.summary.image(self.name + "fake_sample", tf.reshape(G_sample, [-1,image_shape[0],image_shape[1],1]), max_outputs=5)
 
             # initalize all new variables
             self.session.run(tf.variables_initializer(set(tf.global_variables()) - temp))

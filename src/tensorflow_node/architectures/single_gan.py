@@ -11,7 +11,10 @@ from tensorflow_node.nodes import *
 class SingleGANArchitecture(NetworkArchitecture):
 
     def __init__(self, session, inputlayer, foo):
-        # Manual initialization of 4x4 DeSTIN
+
+        # Debug for MNIST
+        latent_vars = [("categorical", 10)]#, ("uniform", 1), ("uniform", 1)]
+
         with tf.device("gpu:0"):
             gan = GANNode(session,
                       name="InfoGAN",
@@ -19,7 +22,7 @@ class SingleGANArchitecture(NetworkArchitecture):
                       lr=1e-3,
                       z_dim=16,
                       d_steps=1,
-                      infogan=True)
+                      latent_vars=latent_vars)
 
             gan.register_tensor(inputlayer.get_tensor_for_region([0, 0, 32, 32]))
 
