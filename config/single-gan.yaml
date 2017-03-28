@@ -6,7 +6,7 @@ tensorflow_node:
       number_of_frames: -1 # read all
       repeat: true
       #input: '/videofile/image_raw' for ROSInputLayer
-      output_size: [64, 64]
+      output_size: [32, 32]
       batch_size: 250
   
   architecture:

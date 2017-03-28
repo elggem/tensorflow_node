@@ -240,7 +240,7 @@ class GANNode(object):
                             for i in xrange(10):
                                 G_label = generator(sample_Z(5, self.z_dim-10), tf.one_hot([i]*5,10))
                                 tf.summary.image(self.name + "infogan_sample_%d" % i, tf.reshape(G_label, [-1,image_shape[0],image_shape[1],1]), max_outputs=5)
-                        else:
+                            else:
                                 G_label = generator(sample_Z(5, self.z_dim))
                                 tf.summary.image(self.name + "gan_sample", tf.reshape(G_label, [-1,image_shape[0],image_shape[1],1]), max_outputs=5)
 

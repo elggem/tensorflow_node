@@ -15,13 +15,13 @@ class SingleGANArchitecture(NetworkArchitecture):
         with tf.device("gpu:0"):
             gan = GANNode(session,
                       name="InfoGAN",
-                      loss="wasserstein",
-                      lr=1e-4,
+                      loss="legacy",
+                      lr=1e-3,
                       z_dim=16,
                       d_steps=1,
                       infogan=True)
 
-            gan.register_tensor(inputlayer.get_tensor_for_region([0, 0, 64, 64]))
+            gan.register_tensor(inputlayer.get_tensor_for_region([0, 0, 32, 32]))
 
             gan.initialize_graph()
 
