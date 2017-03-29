@@ -84,7 +84,7 @@ class GANNode(object):
 
                 def sample_Z(m, n):
                     '''Uniform prior for G(Z)'''
-                    return tf.random_uniform([m, n], minval=-1, maxval=1) # TODO: Use Normal dist here.
+                    return tf.random_uniform([m, n], minval=0, maxval=1) # TODO: Use Normal dist here.
                 
                 # for InfoGAN
                 def sample_c(m):
@@ -97,11 +97,12 @@ class GANNode(object):
                             onehot = tf.one_hot(tf.cast(random, tf.int32),size)
                             c.append(tf.reshape(onehot, [m,-1]))
                         elif distribution == "uniform":
-                             tf.random_uniform([m, size], minval=-1, maxval=1) # TODO: maybe different range here.
+                            random = tf.random_uniform([m, size], minval=0, maxval=1) # TODO: maybe different range here.
+                            c.append(random)
                         else: 
                             raise NotImplementedError
                 
-                    return tf.concat(axis=1, values=c)
+                    return tf.concat(axis=1, values=c), c
 
                 
                 def xavier_init(size):
@@ -143,17 +144,20 @@ class GANNode(object):
 
                 ## InfoGAN
                 if self.infogan:
-                    Q_W1 = tf.Variable(xavier_init([input_dim, self.h_dim]))
-                    Q_b1 = tf.Variable(tf.zeros(shape=[self.h_dim]))
+                    Q_W1 = tf.Variable(xavier_init([input_dim, self.h_dim]), name='Q_W1')
+                    Q_b1 = tf.Variable(tf.zeros(shape=[self.h_dim]), name='Q_b1')
 
-                    Q_W2 = tf.Variable(xavier_init([self.h_dim, 10]))
-                    Q_b2 = tf.Variable(tf.zeros(shape=[10]))
+                    Q_W2 = tf.Variable(xavier_init([self.h_dim, self.c_dim]), name='Q_W2')
+                    Q_b2 = tf.Variable(tf.zeros(shape=[self.c_dim]), name='Q_b2')
 
                     theta_Q = [Q_W1, Q_W2, Q_b1, Q_b2]
 
                     def Q(x):
                         Q_h1 = tf.nn.relu(tf.matmul(x, Q_W1) + Q_b1)
-                        Q_prob = tf.nn.softmax(tf.matmul(Q_h1, Q_W2) + Q_b2)
+                        Q_logit = tf.matmul(Q_h1, Q_W2) + Q_b2
+                        #TODO: whats needed for gaussian?
+                        Q_prob = tf.nn.softmax(Q_logit)
+                        #Q_prob = tf.nn.sigmoid(Q_logit)
                         return Q_prob
 
                 def generator(z, c=None):
@@ -179,7 +183,7 @@ class GANNode(object):
 
                     # InfoGAN
                     if self.infogan:
-                        c = sample_c(batch_size)
+                        c,_ = sample_c(batch_size)
                         G_sample = generator(Z, c)
                         Q_c_given_x = Q(G_sample)
                         
@@ -237,6 +241,7 @@ class GANNode(object):
                         with self.session.graph.control_dependencies([G_solver]):
                             Q_solver = tf.train.AdamOptimizer(learning_rate=self.lr).minimize(Q_loss, var_list=theta_G + theta_Q)
                         self.train_op.append(Q_solver)
+
                     
                     # Summaries
                     with tf.device("/cpu:0"):
@@ -251,24 +256,51 @@ class GANNode(object):
                             tf.summary.scalar(self.name + "_Q_loss", Q_loss)  
                             tf.summary.histogram(self.name + "_latent_variables", latent_variables)
                             
-                            for distribution, size in self.latent_vars:
-
+                            for curr_latent_var, specification in enumerate(self.latent_vars): ## TODO does it work like this?
+                                #TODO: maybe use a dict instead...
+                                distribution = specification[0]
+                                size = specification[1]
+                                
                                 if distribution == "categorical":
                                     # Generate latent var pictures for summaries
                                     rows = []
                                     
                                     for i in xrange(size):
-                                        G_label = generator(sample_Z(size, self.z_dim), tf.one_hot([i]*size,size))
+                                        _, c_array = sample_c(size)
+                                        
+                                        # override current latent variable
+                                        c_array[curr_latent_var] = tf.one_hot([i]*size,size)
+                                        
+                                        G_label = generator(sample_Z(size, self.z_dim), tf.concat(axis=1, values=c_array))
                                         s = tf.reshape(G_label, [-1,image_shape[0],image_shape[1],1])
                                         cols = tf.concat(axis=0, values=tf.unstack(s))   
                                         rows.append(cols)
                                     
                                     image = tf.concat(axis=1, values=rows)
-                                    tf.summary.image(self.name + "infogan_sample_latent_var_", tf.reshape(image, [1,image.get_shape()[0].value,image.get_shape()[1].value,1]), max_outputs=1)
+                                    tf.summary.image(self.name + "infogan_sample_latent_var_%i" % curr_latent_var, tf.reshape(image, [1,image.get_shape()[0].value,image.get_shape()[1].value,1]), max_outputs=1)
                               
                                 elif distribution == "uniform":
+                                    # Generate latent var pictures for summaries
+                                    rows = []
+                                    
+                                    # how many intermediate samples.
+                                    step_size=0.1
+                                    size = int(size/step_size)
+                                    
+                                    for i in xrange(size):
+                                        _, c_array = sample_c(size)
+                                        
+                                        # override current latent variable
+                                        c_array[curr_latent_var] = tf.ones([size, size*0.1])*tf.constant(i*step_size)
 
-                                    raise NotImplementedError
+                                        G_label = generator(sample_Z(size, self.z_dim), tf.concat(axis=1, values=c_array))
+                                        s = tf.reshape(G_label, [-1,image_shape[0],image_shape[1],1])
+                                        cols = tf.concat(axis=0, values=tf.unstack(s))   
+                                        rows.append(cols)
+                                    
+                                    image = tf.concat(axis=1, values=rows)
+                                    tf.summary.image(self.name + "infogan_sample_latent_var_%i" % curr_latent_var, tf.reshape(image, [1,image.get_shape()[0].value,image.get_shape()[1].value,1]), max_outputs=1)
+                              
                                 else:
                                     raise NotImplementedError
                         else:

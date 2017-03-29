@@ -13,7 +13,8 @@ class SingleGANArchitecture(NetworkArchitecture):
     def __init__(self, session, inputlayer, foo):
 
         # Debug for MNIST
-        latent_vars = [("categorical", 10)]#, ("uniform", 1), ("uniform", 1)]
+        latent_vars = [("categorical", 10), ("uniform", 1)]
+        #latent_vars = [("categorical", 10), ("categorical", 2)]#, ("uniform", 1), ("uniform", 1)]
 
         with tf.device("gpu:0"):
             gan = GANNode(session,
