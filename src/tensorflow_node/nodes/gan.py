@@ -251,29 +251,24 @@ class GANNode(object):
                             tf.summary.scalar(self.name + "_Q_loss", Q_loss)  
                             tf.summary.histogram(self.name + "_latent_variables", latent_variables)
                             
-                            
-                            """
-                                TODOs
-                                
-                                make this drawing general purpose...
-                                refactor to make nicer.
-                            
-                            """
-                            
                             for distribution, size in self.latent_vars:
+
                                 if distribution == "categorical":
-                                    # Generate latent var pictures for summary #TODO: latent_vars, tiles.
+                                    # Generate latent var pictures for summaries
                                     rows = []
                                     
                                     for i in xrange(size):
                                         G_label = generator(sample_Z(size, self.z_dim), tf.one_hot([i]*size,size))
                                         s = tf.reshape(G_label, [-1,image_shape[0],image_shape[1],1])
-                                        cols = tf.concat(axis=0, values=[s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7], s[8], s[9]])   
+                                        cols = tf.concat(axis=0, values=tf.unstack(s))   
                                         rows.append(cols)
                                     
                                     image = tf.concat(axis=1, values=rows)
-                                    tf.summary.image(self.name + "infogan_sample_latent_var_", tf.reshape(image, [1,.get_shape()[0].value,.get_shape()[1].value,1]), max_outputs=10)
+                                    tf.summary.image(self.name + "infogan_sample_latent_var_", tf.reshape(image, [1,image.get_shape()[0].value,image.get_shape()[1].value,1]), max_outputs=1)
                               
+                                elif distribution == "uniform":
+
+                                    raise NotImplementedError
                                 else:
                                     raise NotImplementedError
                         else:
