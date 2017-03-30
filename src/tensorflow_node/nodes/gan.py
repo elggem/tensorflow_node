@@ -152,15 +152,14 @@ class GANNode(object):
 
                     theta_Q = [Q_W1, Q_W2, Q_b1, Q_b2]
 
-                    def Q(x):
+                    def Q_cont(x):
                         Q_h1 = tf.nn.relu(tf.matmul(x, Q_W1) + Q_b1)
                         Q_logit = tf.matmul(Q_h1, Q_W2) + Q_b2
-                        #TODO: how to calculate mean/stddev
-                        #Q_prob = tf.nn.softmax(Q_logit)
-                        #Q_prob = tf.nn.sigmoid(Q_logit)
-                        #return Q_prob
                         return Q_logit
-
+                    
+                    def Q_disc(x):
+                        return tf.nn.softmax(Q_cont(x))
+                        
                 def generator(z, c=None):
                     if c != None:
                         inputs = tf.concat(axis=1, values=[z, c])
@@ -184,24 +183,25 @@ class GANNode(object):
 
                     # InfoGAN
                     if self.infogan:
-                        c,_ = sample_c(batch_size)
-                        G_sample = generator(Z, c)
-                        Q_c_given_x = Q(G_sample)
+                        c_concat,c_array = sample_c(batch_size)
+                        G_sample = generator(Z, c_concat)
+                        Q_c_given_x_cont = Q_cont(G_sample)
+                        Q_c_given_x_disc = Q_disc(G_sample)
                         
-                        #Entropy for Gaussian Vars.
-                        std_contig = tf.ones_like(Q_c_given_x)
-                        epsilon = (c - Q_c_given_x) / (std_contig + 1e-8)
-                        cond_ent = tf.reduce_mean(-tf.reduce_sum(- 0.5 * np.log(2 * np.pi) - tf.log(std_contig + 1e-8) - 0.5 * tf.square(epsilon)))
-                        
-                        # Entropy for uniform vars
-                        #cond_ent = tf.reduce_mean(-tf.reduce_sum(tf.log(Q_c_given_x + 1e-8) * c, 1))
-                        
-                        
-                        ent = tf.reduce_mean(-tf.reduce_sum(tf.log(c + 1e-8) * c, 1))
-                        
-                        Q_loss = cond_ent + ent
+                        cond_ent = tf.constant(0.0)
 
-                        latent_variables = Q(X)
+                        #Entropy for Gaussian Vars.
+                        std_contig = tf.ones_like(Q_c_given_x_cont)
+                        epsilon = (c_concat - Q_c_given_x_cont) / (std_contig + 1e-8)
+                        cond_ent += tf.reduce_sum(- 0.5 * np.log(2 * np.pi) - tf.log(std_contig + 1e-8) - 0.5 * tf.square(epsilon))
+                        
+                        # Entropy for Categorical vars
+                        cond_ent += tf.reduce_mean(-tf.reduce_sum(tf.log(Q_c_given_x_disc + 1e-8) * c_concat, 1))
+                        
+                        ent = tf.reduce_sum(tf.log(c_concat + 1e-8) * c_concat, 1)
+                        Q_loss = tf.reduce_mean(-cond_ent) + tf.reduce_mean(-ent)
+
+                        latent_variables = Q_cont(X)
                     else:
                         G_sample = generator(Z)
                     
