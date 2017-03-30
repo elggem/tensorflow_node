@@ -84,7 +84,7 @@ class GANNode(object):
 
                 def sample_Z(m, n):
                     '''Uniform prior for G(Z)'''
-                    return tf.random_uniform([m, n], minval=0, maxval=1) # TODO: Use Normal dist here.
+                    return tf.random_uniform([m, n], minval=-1, maxval=1) # TODO: Use Normal dist here.
                 
                 # for InfoGAN
                 def sample_c(m):
@@ -97,7 +97,7 @@ class GANNode(object):
                             onehot = tf.one_hot(tf.cast(random, tf.int32),size)
                             c.append(tf.reshape(onehot, [m,-1]))
                         elif distribution == "uniform":
-                            random = tf.random_uniform([m, size], minval=0, maxval=1) # TODO: maybe different range here.
+                            random = tf.random_uniform([m, size], minval=0, maxval=1) # TODO: normal distribution
                             c.append(random)
                         else: 
                             raise NotImplementedError
@@ -155,10 +155,11 @@ class GANNode(object):
                     def Q(x):
                         Q_h1 = tf.nn.relu(tf.matmul(x, Q_W1) + Q_b1)
                         Q_logit = tf.matmul(Q_h1, Q_W2) + Q_b2
-                        #TODO: whats needed for gaussian?
-                        Q_prob = tf.nn.softmax(Q_logit)
+                        #TODO: how to calculate mean/stddev
+                        #Q_prob = tf.nn.softmax(Q_logit)
                         #Q_prob = tf.nn.sigmoid(Q_logit)
-                        return Q_prob
+                        #return Q_prob
+                        return Q_logit
 
                 def generator(z, c=None):
                     if c != None:
@@ -187,11 +188,20 @@ class GANNode(object):
                         G_sample = generator(Z, c)
                         Q_c_given_x = Q(G_sample)
                         
-                        latent_variables = Q(X)
+                        #Entropy for Gaussian Vars.
+                        std_contig = tf.ones_like(Q_c_given_x)
+                        epsilon = (c - Q_c_given_x) / (std_contig + 1e-8)
+                        cond_ent = tf.reduce_mean(-tf.reduce_sum(- 0.5 * np.log(2 * np.pi) - tf.log(std_contig + 1e-8) - 0.5 * tf.square(epsilon)))
                         
-                        cond_ent = tf.reduce_mean(-tf.reduce_sum(tf.log(Q_c_given_x + 1e-8) * c, 1))
+                        # Entropy for uniform vars
+                        #cond_ent = tf.reduce_mean(-tf.reduce_sum(tf.log(Q_c_given_x + 1e-8) * c, 1))
+                        
+                        
                         ent = tf.reduce_mean(-tf.reduce_sum(tf.log(c + 1e-8) * c, 1))
+                        
                         Q_loss = cond_ent + ent
+
+                        latent_variables = Q(X)
                     else:
                         G_sample = generator(Z)
                     
@@ -285,7 +295,7 @@ class GANNode(object):
                                     
                                     # how many intermediate samples.
                                     step_size=0.1
-                                    size = int(size/step_size)
+                                    size = 10
                                     
                                     for i in xrange(size):
                                         _, c_array = sample_c(size)
