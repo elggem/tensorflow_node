@@ -13,7 +13,7 @@ class SingleGANArchitecture(NetworkArchitecture):
     def __init__(self, session, inputlayer, foo):
 
         # Debug for MNIST
-        latent_vars = [("categorical", 10), ("uniform", True)]
+        latent_vars = [("categorical", 10)]#, ("uniform", True)]
         #latent_vars = [("uniform", True), ("uniform", True), ("uniform", True), ("uniform", True), ("uniform", True)]
         #latent_vars = [("categorical", 10), ("categorical", 2)]#, ("uniform", 1), ("uniform", 1)]
         

@@ -51,14 +51,23 @@ class GANNode(object):
         self.loss = loss
         self.lr = lr
         
+        # dimensionalities of c for InfoGAN
         self.c_dim = 0
+        self.c_disc_dim = 0
+        self.c_cont_dim = 0
         
         if latent_vars == None:
             self.infogan = False
         else:
             self.infogan = True
             self.latent_vars = latent_vars
-            for _,i in latent_vars: self.c_dim+=i
+            for t,i in latent_vars: 
+                if t=="categorical": self.c_disc_dim+=i
+            for t,i in latent_vars: 
+                if t=="uniform": self.c_cont_dim+=i
+            self.c_dim = self.c_disc_dim+self.c_cont_dim
+            print self.c_dim
+
         
         # generate reusable scope
         with tf.name_scope(self.name) as scope:
@@ -144,21 +153,34 @@ class GANNode(object):
 
                 ## InfoGAN
                 if self.infogan:
-                    Q_W1 = tf.Variable(xavier_init([input_dim, self.h_dim]), name='Q_W1')
-                    Q_b1 = tf.Variable(tf.zeros(shape=[self.h_dim]), name='Q_b1')
+                    # Q network for discrete latent variables
+                    Q_disc_W1 = tf.Variable(xavier_init([input_dim, self.h_dim]), name='Q_W1')
+                    Q_disc_b1 = tf.Variable(tf.zeros(shape=[self.h_dim]), name='Q_b1')
+                    
+                    Q_disc_W2 = tf.Variable(xavier_init([self.h_dim, self.c_disc_dim]), name='Q_W2')
+                    Q_disc_b2 = tf.Variable(tf.zeros(shape=[self.c_disc_dim]), name='Q_b2')
 
-                    Q_W2 = tf.Variable(xavier_init([self.h_dim, self.c_dim]), name='Q_W2')
-                    Q_b2 = tf.Variable(tf.zeros(shape=[self.c_dim]), name='Q_b2')
+                    theta_Q_disc = [Q_disc_W1, Q_disc_W2, Q_disc_b1, Q_disc_b2]
 
-                    theta_Q = [Q_W1, Q_W2, Q_b1, Q_b2]
+                    def Q_disc(x):
+                        Q_h1 = tf.nn.relu(tf.matmul(x, Q_disc_W1) + Q_disc_b1)
+                        Q_logit = tf.matmul(Q_h1, Q_disc_W2) + Q_disc_b2
+                        return tf.nn.softmax(Q_logit)
+                        
+                    # Q network for continous latent variables
+                    Q_cont_W1 = tf.Variable(xavier_init([input_dim, self.h_dim]), name='Q_W1')
+                    Q_cont_b1 = tf.Variable(tf.zeros(shape=[self.h_dim]), name='Q_b1')
+                    
+                    Q_cont_W2 = tf.Variable(xavier_init([self.h_dim, self.c_cont_dim]), name='Q_W2')
+                    Q_cont_b2 = tf.Variable(tf.zeros(shape=[self.c_cont_dim]), name='Q_b2')
+
+                    theta_Q_cont = [Q_cont_W1, Q_cont_W2, Q_cont_b1, Q_cont_b2]
 
                     def Q_cont(x):
-                        Q_h1 = tf.nn.relu(tf.matmul(x, Q_W1) + Q_b1)
-                        Q_logit = tf.matmul(Q_h1, Q_W2) + Q_b2
+                        Q_h1 = tf.nn.relu(tf.matmul(x, Q_cont_W1) + Q_cont_b1)
+                        Q_logit = tf.matmul(Q_h1, Q_cont_W2) + Q_cont_b2
                         return Q_logit
                     
-                    def Q_disc(x):
-                        return tf.nn.softmax(Q_cont(x))
                         
                 def generator(z, c=None):
                     if c != None:
@@ -190,18 +212,20 @@ class GANNode(object):
                         
                         cond_ent = tf.constant(0.0)
 
-                        #Entropy for Gaussian Vars.
-                        std_contig = tf.ones_like(Q_c_given_x_cont)
-                        epsilon = (c_concat - Q_c_given_x_cont) / (std_contig + 1e-8)
-                        cond_ent += tf.reduce_sum(- 0.5 * np.log(2 * np.pi) - tf.log(std_contig + 1e-8) - 0.5 * tf.square(epsilon))
+                        if self.c_cont_dim > 0:
+                            #Entropy for Gaussian Vars.
+                            std_contig = tf.ones_like(Q_c_given_x_cont)
+                            epsilon = (c_concat - Q_c_given_x_cont) / (std_contig + 1e-8)
+                            cond_ent += tf.reduce_sum(- 0.5 * np.log(2 * np.pi) - tf.log(std_contig + 1e-8) - 0.5 * tf.square(epsilon))
                         
-                        # Entropy for Categorical vars
-                        cond_ent += tf.reduce_mean(-tf.reduce_sum(tf.log(Q_c_given_x_disc + 1e-8) * c_concat, 1))
+                        if self.c_disc_dim > 0:
+                            # Entropy for Categorical vars
+                            cond_ent += tf.reduce_mean(-tf.reduce_sum(tf.log(Q_c_given_x_disc + 1e-8) * c_concat, 1))
                         
                         ent = tf.reduce_sum(tf.log(c_concat + 1e-8) * c_concat, 1)
                         Q_loss = tf.reduce_mean(-cond_ent) + tf.reduce_mean(-ent)
 
-                        latent_variables = Q_cont(X)
+                        latent_variables = tf.concat(axis=1, values=[Q_disc(X), Q_cont(X)])
                     else:
                         G_sample = generator(Z)
                     
@@ -249,7 +273,7 @@ class GANNode(object):
                     # InfoGAN
                     if self.infogan:
                         with self.session.graph.control_dependencies([G_solver]):
-                            Q_solver = tf.train.AdamOptimizer(learning_rate=self.lr).minimize(Q_loss, var_list=theta_G + theta_Q)
+                            Q_solver = tf.train.AdamOptimizer(learning_rate=self.lr).minimize(Q_loss, var_list=theta_G + theta_Q_disc + theta_Q_cont)
                         self.train_op.append(Q_solver)
 
                     
@@ -287,7 +311,7 @@ class GANNode(object):
                                         rows.append(cols)
                                     
                                     image = tf.concat(axis=1, values=rows)
-                                    tf.summary.image(self.name + "infogan_sample_latent_var_%i" % curr_latent_var, tf.reshape(image, [1,image.get_shape()[0].value,image.get_shape()[1].value,1]), max_outputs=1)
+                                    tf.summary.image(self.name + "latent_var_%s_%i" % (distribution, curr_latent_var), tf.reshape(image, [1,image.get_shape()[0].value,image.get_shape()[1].value,1]), max_outputs=1)
                               
                                 elif distribution == "uniform":
                                     # Generate latent var pictures for summaries
@@ -297,19 +321,21 @@ class GANNode(object):
                                     step_size=0.1
                                     size = 10
                                     
+                                    Z = sample_Z(size, self.z_dim)
+                                    
                                     for i in xrange(size):
                                         _, c_array = sample_c(size)
                                         
                                         # override current latent variable
-                                        c_array[curr_latent_var] = tf.ones([size, size*0.1])*tf.constant(i*step_size)
+                                        c_array[curr_latent_var] = tf.ones([size, 1])*tf.constant(i*step_size)
 
-                                        G_label = generator(sample_Z(size, self.z_dim), tf.concat(axis=1, values=c_array))
+                                        G_label = generator(Z, tf.concat(axis=1, values=c_array))
                                         s = tf.reshape(G_label, [-1,image_shape[0],image_shape[1],1])
                                         cols = tf.concat(axis=0, values=tf.unstack(s))   
                                         rows.append(cols)
                                     
                                     image = tf.concat(axis=1, values=rows)
-                                    tf.summary.image(self.name + "infogan_sample_latent_var_%i" % curr_latent_var, tf.reshape(image, [1,image.get_shape()[0].value,image.get_shape()[1].value,1]), max_outputs=1)
+                                    tf.summary.image(self.name + "latent_var_%s_%i" % (distribution, curr_latent_var), tf.reshape(image, [1,image.get_shape()[0].value,image.get_shape()[1].value,1]), max_outputs=1)
                               
                                 else:
                                     raise NotImplementedError
