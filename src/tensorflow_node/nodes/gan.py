@@ -210,19 +210,36 @@ class GANNode(object):
                         Q_c_given_x_cont = Q_cont(G_sample)
                         Q_c_given_x_disc = Q_disc(G_sample)
                         
+                        c_array_disc = []
+                        c_array_cont = []
+                        
+                        for i,v in enumerate(self.latent_vars):
+                            t = v[0]
+                            if t=="categorical":
+                                c_array_disc.append(c_array[i])
+                            elif t=="uniform":
+                                c_array_cont.append(c_array[i])
+                                
                         cond_ent = tf.constant(0.0)
-
-                        if self.c_cont_dim > 0:
-                            #Entropy for Gaussian Vars.
-                            std_contig = tf.ones_like(Q_c_given_x_cont)
-                            epsilon = (c_concat - Q_c_given_x_cont) / (std_contig + 1e-8)
-                            cond_ent += tf.reduce_sum(- 0.5 * np.log(2 * np.pi) - tf.log(std_contig + 1e-8) - 0.5 * tf.square(epsilon))
+                        ent = tf.constant(0.0)
                         
+                        
+                        # Entropy for Categorical vars
                         if self.c_disc_dim > 0:
-                            # Entropy for Categorical vars
-                            cond_ent += tf.reduce_mean(-tf.reduce_sum(tf.log(Q_c_given_x_disc + 1e-8) * c_concat, 1))
+                            c_concat_disc = tf.concat(axis=1, values=c_array_disc)
+                            cond_ent += tf.reduce_mean(tf.reduce_sum(tf.log(Q_c_given_x_disc + 1e-8) * c_concat_disc, 1))
+                            ent += tf.reduce_sum(tf.log(c_concat_disc + 1e-8) * c_concat_disc, 1)
+
+
+                        #Entropy for Gaussian Vars.
+                        if self.c_cont_dim > 0:
+                            c_concat_cont = tf.concat(axis=1, values=c_array_cont)
+                            std_contig = tf.ones_like(Q_c_given_x_cont)
+                            epsilon = (c_concat_cont - Q_c_given_x_cont) / (std_contig + 1e-8)
+                            cond_ent += tf.reduce_sum(- 0.5 * np.log(2 * np.pi) - tf.log(std_contig + 1e-8) - 0.5 * tf.square(epsilon))
+                            ent += tf.reduce_sum(tf.log(c_concat_cont + 1e-8) * c_concat_cont, 1)
                         
-                        ent = tf.reduce_sum(tf.log(c_concat + 1e-8) * c_concat, 1)
+                        
                         Q_loss = tf.reduce_mean(-cond_ent) + tf.reduce_mean(-ent)
 
                         latent_variables = tf.concat(axis=1, values=[Q_disc(X), Q_cont(X)])
